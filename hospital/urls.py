@@ -5,7 +5,9 @@ from . import views
 # Importer les vues modulaires
 from .views.base import (
     dashboard, custom_logout, statistics_view, doctor_dashboard,
-    medical_admin_dashboard, get_patients_partial, register
+    medical_admin_dashboard, get_patients_partial, register,
+    doctor_my_consultations, doctor_my_hospitalisations,
+    doctor_my_emergencies, doctor_my_patients
 )
 from .views.patients_views import (
     patient_list, patient_detail, create_patient_form, edit_patient,
@@ -46,7 +48,13 @@ urlpatterns = [
     path('login/', LoginView.as_view(template_name='hospital/registration/login.html'), name='login'),
     path('logout/', custom_logout, name='logout'),
     path('register/', register, name='register'),
-    path('doctor-dashboard/', doctor_dashboard, name='doctor_dashboard'),
+    
+    # Espace médecin (remplace doctor-dashboard)
+    path('doctor/', doctor_dashboard, name='doctor_dashboard'),
+    path('doctor/consultations/', doctor_my_consultations, name='doctor_my_consultations'),
+    path('doctor/hospitalisations/', doctor_my_hospitalisations, name='doctor_my_hospitalisations'),
+    path('doctor/emergencies/', doctor_my_emergencies, name='doctor_my_emergencies'),
+    path('doctor/patients/', doctor_my_patients, name='doctor_my_patients'),
     
     # Gestion des patients
     path('patients/', patient_list, name='patient_list'),

@@ -1,0 +1,165 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Mes Patients - {{ block.super }}{% endblock %}
+
+{% block page_title %}Mes Patients{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="section-title"><i class="fas fa-users me-2"></i>Tous mes patients</h2>
+                <a href="{% url 'doctor_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour au dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-10">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" name="q" class="form-control" placeholder="Rechercher par nom, téléphone, ID..." value="{{ current_search }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-2"></i>Rechercher
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <strong><i class="fas fa-info-circle me-2"></i>Total :</strong> {{ total_count }} patient{{ total_count|pluralize }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des patients -->
+    <div class="row">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom complet</th>
+                                    <th>Date de naissance</th>
+                                    <th>Genre</th>
+                                    <th>Téléphone</th>
+                                    <th>Centre</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for patient in patients %}
+                                <tr>
+                                    <td class="fw-bold">#{{ patient.id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="patient-avatar me-2" style="width: 35px; height: 35px; background: linear-gradient(135deg, #3498db, #2980b9); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                                {{ patient.first_name|first|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">
+                                                    {{ patient.last_name|upper }}
+                                                    {% if patient.postname %}{{ patient.postname|upper }}{% endif %}
+                                                    {{ patient.first_name }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap">{{ patient.date_of_birth|date:"d/m/Y" }} ({{ patient.age }} ans)</td>
+                                    <td>
+                                        {% if patient.gender == 'M' %}
+                                        <span class="badge bg-primary">Homme</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Femme</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-nowrap">{{ patient.phone|default:"-" }}</td>
+                                    <td>{{ patient.default_centre.name|default:"Non assigné" }}</td>
+                                    <td>
+                                        {% if patient.is_subscriber %}
+                                        <span class="badge bg-success">Abonné</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Particulier</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'patient_detail' patient.id %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-success" hx-get="{% url 'consultation_create' %}?patient_id={{ patient.id }}" hx-target="#modal-container" data-bs-toggle="modal" data-bs-target="#modal-container" title="Nouvelle consultation">
+                                                <i class="fas fa-stethoscope"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-users fa-3x mb-3"></i>
+                                        <h5>Aucun patient trouvé</h5>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if patients.has_other_pages %}
+                    <nav aria-label="Pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if patients.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ patients.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}">Précédent</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">Page {{ patients.number }} / {{ patients.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if patients.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ patients.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}">Suivant</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

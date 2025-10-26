@@ -5,6 +5,8 @@ from django.db import transaction
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
+
 from ..models import Patient, Centre
 from ..permissions import check_patient_access, can_manage_patient_admin_data, can_manage_patient_medical_data
 
@@ -253,13 +255,13 @@ class PatientService:
     def _invalidate_patients_cache(self, user):
         """
         Invalider le cache des patients pour un utilisateur
+        Supprime toutes les pages pour cet utilisateur
         """
-        # Supprimer toutes les clés de cache pour cet utilisateur
-        cache_pattern = f'patients_{user.id}_{user.profile.role}_*'
-        # Note: django-redis ne supporte pas les patterns de suppression directement
-        # Pour une implémentation complète, il faudrait utiliser une approche différente
-        # ou stocker les clés de cache dans un set Redis
+        # Supprimer plusieurs pages potentielles (jusqu'à 10 pages)
+        for page_num in range(1, 11):
+            for per_page in [10, 25, 50, 100]:
+                cache_key = f'patients_{user.id}_{user.profile.role}_{page_num}_{per_page}'
+                cache.delete(cache_key)
         
-        # Pour l'instant, on supprime juste la première page
-        cache_key = f'patients_{user.id}_{user.profile.role}_1_25'
-        cache.delete(cache_key)
+        # Alternative: désactiver le cache pour éviter les incohérences
+        # ou utiliser un système de tags de cache plus avancé

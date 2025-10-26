@@ -1,0 +1,164 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Mes Hospitalisations - {{ block.super }}{% endblock %}
+
+{% block page_title %}Mes Hospitalisations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="section-title"><i class="fas fa-procedures me-2"></i>Toutes mes hospitalisations</h2>
+                <a href="{% url 'doctor_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour au dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" name="q" class="form-control" placeholder="Rechercher par patient, service, ID..." value="{{ current_search }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="status" class="form-select">
+                                <option value="">Tous</option>
+                                <option value="active" {% if current_status == 'active' %}selected{% endif %}>Actives</option>
+                                <option value="discharged" {% if current_status == 'discharged' %}selected{% endif %}>Sorties</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter me-2"></i>Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <strong><i class="fas fa-info-circle me-2"></i>Total :</strong> {{ total_count }} hospitalisation{{ total_count|pluralize }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des hospitalisations -->
+    <div class="row">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Patient</th>
+                                    <th>Service</th>
+                                    <th>Chambre/Lit</th>
+                                    <th>Admission</th>
+                                    <th>Sortie</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for hosp in hospitalisations %}
+                                <tr>
+                                    <td class="fw-bold">#{{ hosp.id }}</td>
+                                    <td>{{ hosp.patient }}</td>
+                                    <td>{{ hosp.service }}</td>
+                                    <td>{{ hosp.room|default:"-" }}/{{ hosp.bed|default:"-" }}</td>
+                                    <td class="text-nowrap">{{ hosp.admission_date|date:"d/m/Y" }}</td>
+                                    <td class="text-nowrap">
+                                        {% if hosp.discharge_date %}
+                                            {{ hosp.discharge_date|date:"d/m/Y" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if hosp.discharge_date %}
+                                        <span class="badge bg-success">Sortie</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'hospitalisation_detail' hosp.id %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'patient_detail' hosp.patient.id %}" class="btn btn-sm btn-outline-secondary" title="Voir patient">
+                                                <i class="fas fa-user"></i>
+                                            </a>
+                                            {% if not hosp.discharge_date %}
+                                            <button class="btn btn-sm btn-outline-success" hx-get="{% url 'hospitalisation_discharge' hosp.id %}" hx-target="#modal-container" data-bs-toggle="modal" data-bs-target="#modal-container" title="Sortir">
+                                                <i class="fas fa-door-open"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-procedures fa-3x mb-3"></i>
+                                        <h5>Aucune hospitalisation trouvée</h5>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if hospitalisations.has_other_pages %}
+                    <nav aria-label="Pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if hospitalisations.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ hospitalisations.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">Précédent</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">Page {{ hospitalisations.number }} / {{ hospitalisations.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if hospitalisations.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ hospitalisations.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}">Suivant</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

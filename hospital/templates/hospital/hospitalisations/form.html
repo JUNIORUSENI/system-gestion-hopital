@@ -16,7 +16,8 @@
                     <option value="">Sélectionnez un patient</option>
                     {% for patient in patients %}
                     <option value="{{ patient.id }}"
-                        {% if hospitalisation and hospitalisation.patient.id == patient.id %}selected{% endif %}>
+                        {% if hospitalisation and hospitalisation.patient.id == patient.id %}selected
+                        {% elif selected_patient_id and selected_patient_id == patient.id|stringformat:"s" %}selected{% endif %}>
                         {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }} ({{ patient.date_of_birth|date:"d/m/Y" }})
                     </option>
                     {% endfor %}
@@ -73,43 +74,88 @@
             </div>
         </div>
         
+        <!-- Section Notes Médicales (Médecins uniquement) -->
         {% if can_edit_medical %}
-        <div class="row mb-3">
+        <div class="row mb-4 mt-4">
+            <div class="col-12">
+                <div class="alert alert-primary border-start border-4 border-primary">
+                    <h6 class="fw-bold mb-2"><i class="fas fa-stethoscope me-2"></i>Notes Médicales (Médecin)</h6>
+                    <small class="text-muted">Réservé aux médecins pour documenter les observations médicales</small>
+                </div>
+            </div>
             <div class="col-md-12">
-                <label for="medical_notes" class="form-label fw-semibold text-dark">Notes médicales</label>
-                <textarea name="medical_notes" id="medical_notes" class="form-control" rows="3">{% if hospitalisation %}{{ hospitalisation.medical_notes }}{% endif %}</textarea>
+                <label for="medical_notes" class="form-label fw-semibold text-dark">Ajouter/Modifier notes médicales</label>
+                <textarea name="medical_notes" id="medical_notes" class="form-control" rows="4" placeholder="Observations médicales, évolution clinique, décisions thérapeutiques...">{% if hospitalisation %}{{ hospitalisation.medical_notes }}{% endif %}</textarea>
+                <small class="text-muted">Ces notes seront ajoutées au dossier médical du patient</small>
             </div>
         </div>
         {% endif %}
         
-        {% if is_nurse %}
-        <div class="row mb-3">
+        <!-- Section Notes Infirmières -->
+        {% if is_nurse or is_doctor %}
+        <div class="row mb-4 mt-4">
+            <div class="col-12">
+                <div class="alert alert-success border-start border-4 border-success">
+                    <h6 class="fw-bold mb-2"><i class="fas fa-user-nurse me-2"></i>Notes Infirmières</h6>
+                    <small class="text-muted">Pour les soins, constantes vitales, observations du personnel soignant</small>
+                </div>
+            </div>
             <div class="col-md-12">
-                <label for="nurse_notes" class="form-label fw-semibold text-dark">Notes infirmières</label>
-                <textarea name="nurse_notes" id="nurse_notes" class="form-control" rows="3" placeholder="Ajouter des notes infirmières (constantes vitales, soins prodigués, etc.)"></textarea>
+                <label for="nurse_notes" class="form-label fw-semibold text-dark">
+                    {% if hospitalisation %}Ajouter de nouvelles notes infirmières{% else %}Notes infirmières initiales{% endif %}
+                </label>
+                <textarea name="nurse_notes" id="nurse_notes" class="form-control" rows="4" placeholder="Constantes vitales, soins prodigués, observations, surveillance..."></textarea>
+                <small class="text-muted">
+                    {% if hospitalisation %}
+                    Ces notes seront ajoutées en haut de l'historique avec date et heure
+                    {% else %}
+                    Première observation infirmière
+                    {% endif %}
+                </small>
             </div>
         </div>
-        {% endif %}
         
         {% if hospitalisation and hospitalisation.nurse_notes %}
         <div class="row mb-3">
             <div class="col-md-12">
-                <label class="form-label fw-semibold text-dark">Notes infirmières précédentes</label>
-                <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
+                <label class="form-label fw-semibold text-dark">
+                    <i class="fas fa-history me-2"></i>Historique des notes infirmières
+                </label>
+                <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.9rem;">
                     <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.nurse_notes }}</pre>
                 </div>
             </div>
         </div>
         {% endif %}
+        {% endif %}
         
-        {% if can_edit_medical and hospitalisation and hospitalisation.discharge_summary %}
-        <div class="row mb-3">
+        <!-- Section Interventions et Compte-rendu (Médecins uniquement) -->
+        {% if can_edit_medical and hospitalisation %}
+        <div class="row mb-3 mt-4">
+            <div class="col-12">
+                <div class="alert alert-warning border-start border-4 border-warning">
+                    <h6 class="fw-bold mb-2"><i class="fas fa-notes-medical me-2"></i>Interventions et Compte-rendu</h6>
+                    <small class="text-muted">Documentation des interventions et résumé de sortie</small>
+                </div>
+            </div>
+            
+            {% if hospitalisation.interventions %}
+            <div class="col-md-12 mb-3">
+                <label class="form-label fw-semibold text-dark">Interventions enregistrées</label>
+                <div class="border rounded p-3 bg-light">
+                    <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9rem;">{{ hospitalisation.interventions }}</pre>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if hospitalisation.discharge_summary %}
             <div class="col-md-12">
                 <label class="form-label fw-semibold text-dark">Compte-rendu de sortie</label>
                 <div class="border rounded p-3 bg-light">
-                    <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.discharge_summary }}</pre>
+                    <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9rem;">{{ hospitalisation.discharge_summary }}</pre>
                 </div>
             </div>
+            {% endif %}
         </div>
         {% endif %}
     </div>

@@ -1,0 +1,167 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Mes Urgences - {{ block.super }}{% endblock %}
+
+{% block page_title %}Mes Urgences{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="section-title"><i class="fas fa-ambulance me-2"></i>Toutes mes urgences</h2>
+                <a href="{% url 'doctor_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour au dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" name="q" class="form-control" placeholder="Rechercher par patient, ID..." value="{{ current_search }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="triage" class="form-select">
+                                <option value="">Tous niveaux</option>
+                                <option value="LOW" {% if current_triage == 'LOW' %}selected{% endif %}>Léger</option>
+                                <option value="MEDIUM" {% if current_triage == 'MEDIUM' %}selected{% endif %}>Moyen</option>
+                                <option value="HIGH" {% if current_triage == 'HIGH' %}selected{% endif %}>Grave</option>
+                                <option value="CRITICAL" {% if current_triage == 'CRITICAL' %}selected{% endif %}>Vital</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter me-2"></i>Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <strong><i class="fas fa-info-circle me-2"></i>Total :</strong> {{ total_count }} urgence{{ total_count|pluralize }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des urgences -->
+    <div class="row">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Niveau</th>
+                                    <th>Motif</th>
+                                    <th>Orientation</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emergency in emergencies %}
+                                <tr>
+                                    <td class="fw-bold">#{{ emergency.id }}</td>
+                                    <td class="text-nowrap">{{ emergency.admission_time|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ emergency.patient }}</td>
+                                    <td>
+                                        {% if emergency.triage_level == 'LOW' %}
+                                        <span class="badge bg-success">Léger</span>
+                                        {% elif emergency.triage_level == 'MEDIUM' %}
+                                        <span class="badge bg-warning">Moyen</span>
+                                        {% elif emergency.triage_level == 'HIGH' %}
+                                        <span class="badge" style="background-color: #fd7e14;">Grave</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Vital</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ emergency.reason|truncatechars:40 }}</td>
+                                    <td>
+                                        {% if emergency.orientation == 'DISCHARGED' %}
+                                        <span class="badge bg-success">Sortie</span>
+                                        {% elif emergency.orientation == 'HOSPITALISED' %}
+                                        <span class="badge bg-info">Hospitalisé</span>
+                                        {% elif emergency.orientation == 'TRANSFERRED' %}
+                                        <span class="badge bg-secondary">Transféré</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">En attente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'emergency_detail' emergency.id %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'patient_detail' emergency.patient.id %}" class="btn btn-sm btn-outline-secondary" title="Voir patient">
+                                                <i class="fas fa-user"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="fas fa-ambulance fa-3x mb-3"></i>
+                                        <h5>Aucune urgence trouvée</h5>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if emergencies.has_other_pages %}
+                    <nav aria-label="Pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if emergencies.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ emergencies.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_triage %}&triage={{ current_triage }}{% endif %}">Précédent</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">Page {{ emergencies.number }} / {{ emergencies.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if emergencies.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ emergencies.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_triage %}&triage={{ current_triage }}{% endif %}">Suivant</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

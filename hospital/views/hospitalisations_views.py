@@ -6,23 +6,30 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.utils import timezone
+from django.db.models import Q
+from django.contrib.auth.models import User
+
 from ..models import Patient, Hospitalisation, Centre
 from ..forms import HospitalisationForm
 from ..permissions import check_patient_access, can_manage_patient_medical_data, can_manage_patient_admin_data
-from django.contrib.auth.models import User
 
 
 @login_required
 def hospitalisation_list(request):
-    """Vue pour la liste des hospitalisations avec pagination"""
-    from django.core.paginator import Paginator
+    """Vue pour la liste des hospitalisations avec pagination et recherche"""
+    # Récupérer les paramètres de recherche et filtrage
+    search_query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    service_filter = request.GET.get('service', '').strip()
+    page = request.GET.get('page', 1)
     
     # Les administrateurs peuvent voir toutes les hospitalisations
     if request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']:
         hospitalisations = Hospitalisation.objects.all()
     elif request.user.profile.role == 'DOCTOR':
-        # Les médecins peuvent voir toutes les hospitalisations des patients de tous les centres
+        # Les médecins voient toutes les hospitalisations
         hospitalisations = Hospitalisation.objects.all()
     elif request.user.profile.role in ['SECRETARY', 'NURSE']:
         # Les secrétaires et infirmiers voient les hospitalisations de leurs centres
@@ -30,14 +37,46 @@ def hospitalisation_list(request):
     else:
         hospitalisations = Hospitalisation.objects.none()
     
+    # Appliquer la recherche
+    if search_query:
+        hospitalisations = hospitalisations.filter(
+            Q(id__icontains=search_query) |
+            Q(patient__first_name__icontains=search_query) |
+            Q(patient__last_name__icontains=search_query) |
+            Q(patient__postname__icontains=search_query) |
+            Q(service__icontains=search_query) |
+            Q(room__icontains=search_query) |
+            Q(bed__icontains=search_query)
+        )
+    
+    # Filtre par statut (actif/terminé)
+    if status_filter == 'active':
+        hospitalisations = hospitalisations.filter(discharge_date__isnull=True)
+    elif status_filter == 'discharged':
+        hospitalisations = hospitalisations.filter(discharge_date__isnull=False)
+    
+    # Filtre par service
+    if service_filter:
+        hospitalisations = hospitalisations.filter(service__icontains=service_filter)
+    
+    # Optimiser avec select_related
+    hospitalisations = hospitalisations.select_related('patient', 'doctor', 'centre').order_by('-admission_date')
+    
+    # Récupérer les services uniques pour le filtre
+    services = Hospitalisation.objects.values_list('service', flat=True).distinct().order_by('service')
+    
     # Pagination
-    paginator = Paginator(hospitalisations, 25)  # 25 hospitalisations par page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(hospitalisations, 25)
+    page_obj = paginator.get_page(page)
     
     return render(request, 'hospital/hospitalisations/list.html', {
         'hospitalisations': page_obj,
-        'page_obj': page_obj
+        'page_obj': page_obj,
+        'services': services,
+        'current_search': search_query,
+        'current_status': status_filter,
+        'current_service': service_filter,
+        'total_count': paginator.count,
     })
 
 
@@ -133,13 +172,22 @@ def hospitalisation_create(request):
     
     centres = Centre.objects.all()
     doctors = User.objects.filter(profile__role='DOCTOR')
+    
+    # Déterminer les rôles
+    can_edit_medical = can_manage_patient_medical_data(request.user)
+    is_nurse = request.user.profile.role == 'NURSE'
+    is_doctor = request.user.profile.role in ['DOCTOR', 'MEDICAL_ADMIN']
+    
     return render(request, 'hospital/hospitalisations/form.html', {
         'patients': filtered_patients,
         'centres': centres,
         'doctors': doctors,
         'title': 'Créer une nouvelle hospitalisation',
-        'can_manage_medical': can_manage_patient_medical_data(request.user),
-        'selected_patient': selected_patient
+        'can_edit_medical': can_edit_medical,
+        'is_nurse': is_nurse,
+        'is_doctor': is_doctor,
+        'selected_patient': selected_patient,
+        'selected_patient_id': selected_patient_id
     })
 
 
@@ -240,6 +288,7 @@ def hospitalisation_edit(request, hospitalisation_id):
     # Déterminer les champs visibles selon le rôle
     can_edit_medical = can_manage_patient_medical_data(request.user)
     is_nurse = request.user.profile.role == 'NURSE'
+    is_doctor = request.user.profile.role in ['DOCTOR', 'MEDICAL_ADMIN']
     
     return render(request, 'hospital/hospitalisations/form.html', {
         'hospitalisation': hospitalisation,
@@ -248,7 +297,8 @@ def hospitalisation_edit(request, hospitalisation_id):
         'doctors': doctors,
         'title': f'Éditer l\'hospitalisation - {hospitalisation.patient}',
         'can_edit_medical': can_edit_medical,
-        'is_nurse': is_nurse
+        'is_nurse': is_nurse,
+        'is_doctor': is_doctor
     })
 
 

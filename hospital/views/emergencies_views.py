@@ -6,11 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.utils import timezone
+from django.db.models import Q
+from django.contrib.auth.models import User
+
 from ..models import Patient, Emergency, Centre
 from ..forms import EmergencyForm
 from ..permissions import check_patient_access, can_manage_patient_medical_data, can_manage_patient_admin_data
-from django.contrib.auth.models import User
 
 
 @login_required
@@ -128,7 +131,8 @@ def emergency_create(request):
         'doctors': doctors,
         'title': 'Enregistrer une nouvelle urgence',
         'can_manage_medical': can_manage_patient_medical_data(request.user),
-        'selected_patient': selected_patient
+        'selected_patient': selected_patient,
+        'selected_patient_id': selected_patient_id
     })
 
 
@@ -380,18 +384,22 @@ def emergency_detail(request, emergency_id):
 
 @login_required
 def emergency_list(request):
-    """Vue pour la liste des urgences avec pagination"""
+    """Vue pour la liste des urgences avec pagination et recherche"""
     # Vérifier que l'utilisateur a un profil
     if not hasattr(request.user, 'profile'):
         raise PermissionDenied("Utilisateur sans profil")
     
-    from django.core.paginator import Paginator
+    # Récupérer les paramètres de recherche et filtrage
+    search_query = request.GET.get('q', '').strip()
+    triage_filter = request.GET.get('triage', '').strip()
+    orientation_filter = request.GET.get('orientation', '').strip()
+    page = request.GET.get('page', 1)
     
     # Les administrateurs peuvent voir toutes les urgences
     if request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']:
         emergencies = Emergency.objects.all()
     elif request.user.profile.role == 'DOCTOR':
-        # Les médecins peuvent voir toutes les urgences des patients de tous les centres
+        # Les médecins voient toutes les urgences
         emergencies = Emergency.objects.all()
     elif request.user.profile.role in ['SECRETARY', 'NURSE']:
         # Les secrétaires et infirmiers voient les urgences de leurs centres
@@ -399,12 +407,40 @@ def emergency_list(request):
     else:
         emergencies = Emergency.objects.none()
     
+    # Appliquer la recherche
+    if search_query:
+        emergencies = emergencies.filter(
+            Q(id__icontains=search_query) |
+            Q(patient__first_name__icontains=search_query) |
+            Q(patient__last_name__icontains=search_query) |
+            Q(patient__postname__icontains=search_query) |
+            Q(reason__icontains=search_query) |
+            Q(initial_diagnosis__icontains=search_query)
+        )
+    
+    # Filtre par niveau de triage
+    if triage_filter:
+        emergencies = emergencies.filter(triage_level=triage_filter)
+    
+    # Filtre par orientation
+    if orientation_filter:
+        if orientation_filter == 'pending':
+            emergencies = emergencies.filter(orientation__isnull=True)
+        else:
+            emergencies = emergencies.filter(orientation=orientation_filter)
+    
+    # Optimiser avec select_related
+    emergencies = emergencies.select_related('patient', 'doctor', 'centre').order_by('-admission_time')
+    
     # Pagination
-    paginator = Paginator(emergencies, 25)  # 25 urgences par page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(emergencies, 25)
+    page_obj = paginator.get_page(page)
     
     return render(request, 'hospital/emergencies/list.html', {
         'emergencies': page_obj,
-        'page_obj': page_obj
+        'page_obj': page_obj,
+        'current_search': search_query,
+        'current_triage': triage_filter,
+        'current_orientation': orientation_filter,
+        'total_count': paginator.count,
     })

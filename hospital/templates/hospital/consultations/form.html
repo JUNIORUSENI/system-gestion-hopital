@@ -16,7 +16,8 @@
                     <option value="">Sélectionnez un patient</option>
                     {% for patient in patients %}
                     <option value="{{ patient.id }}"
-                        {% if consultation and consultation.patient.id == patient.id %}selected{% endif %}>
+                        {% if consultation and consultation.patient.id == patient.id %}selected
+                        {% elif selected_patient_id and selected_patient_id == patient.id|stringformat:"s" %}selected{% endif %}>
                         {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }} ({{ patient.date_of_birth|date:"d/m/Y" }})
                     </option>
                     {% endfor %}

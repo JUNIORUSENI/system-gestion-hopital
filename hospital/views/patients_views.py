@@ -3,6 +3,7 @@ Vues pour la gestion des patients
 """
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
@@ -10,6 +11,8 @@ from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.db.models import Q
+
 from ..models import Patient, Centre
 from ..forms import PatientForm
 from ..services.patient_service import PatientService
@@ -17,32 +20,89 @@ from ..permissions import (
     CanAccessPatient, CanManagePatientAdminData, CanManagePatientMedicalData,
     permission_required, object_permission_required
 )
-from django.contrib.auth.mixins import LoginRequiredMixin
 from .base import RoleRequiredMixin
 
 
 @login_required
 def patient_list(request):
-    """Vue pour la liste des patients avec pagination"""
-    patient_service = PatientService()
-    
-    # Récupérer les paramètres de pagination
+    """Vue pour la liste des patients avec pagination et filtres côté serveur"""
+    # Récupérer les paramètres de filtrage
+    search_query = request.GET.get('q', '').strip()
+    centre_id = request.GET.get('centre', '').strip()
+    is_subscriber = request.GET.get('subscriber', '').strip()
+    gender = request.GET.get('gender', '').strip()
     page = request.GET.get('page', 1)
     per_page = request.GET.get('per_page', 25)
     
-    # Récupérer les patients
-    result = patient_service.get_patients_for_user(
-        user=request.user,
-        page=page,
-        per_page=per_page
-    )
+    # Récupérer les patients selon les permissions
+    if request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']:
+        patients = Patient.objects.all()
+    elif request.user.profile.role == 'DOCTOR':
+        # Les médecins voient tous les patients
+        patients = Patient.objects.all()
+    elif request.user.profile.role == 'SECRETARY':
+        patients = Patient.objects.filter(
+            default_centre__in=request.user.profile.centres.all()
+        )
+    elif request.user.profile.role == 'NURSE':
+        # Les infirmiers voient les patients hospitalisés dans leurs centres
+        from ..models import Hospitalisation
+        patient_ids = Hospitalisation.objects.filter(
+            centre__in=request.user.profile.centres.all()
+        ).values_list('patient_id', flat=True).distinct()
+        patients = Patient.objects.filter(id__in=patient_ids)
+    else:
+        patients = Patient.objects.none()
+    
+    # Appliquer les filtres de recherche
+    if search_query:
+        patients = patients.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(postname__icontains=search_query) |
+            Q(phone__icontains=search_query) |
+            Q(id__icontains=search_query)
+        )
+    
+    # Filtre par centre
+    if centre_id:
+        try:
+            patients = patients.filter(default_centre_id=centre_id)
+        except (ValueError, TypeError):
+            pass
+    
+    # Filtre par statut d'abonné
+    if is_subscriber:
+        if is_subscriber.lower() == 'true':
+            patients = patients.filter(is_subscriber=True)
+        elif is_subscriber.lower() == 'false':
+            patients = patients.filter(is_subscriber=False)
+    
+    # Filtre par genre
+    if gender in ['M', 'F']:
+        patients = patients.filter(gender=gender)
+    
+    # Optimiser avec select_related
+    patients = patients.select_related('default_centre').order_by('last_name', 'first_name')
+    
+    # Pagination
+    paginator = Paginator(patients, per_page)
+    page_obj = paginator.get_page(page)
     
     # Récupérer tous les centres pour le filtre
-    centres = Centre.objects.all()
+    centres = Centre.objects.all().order_by('name')
     
     context = {
+        'patients': page_obj,
+        'page_obj': page_obj,
         'centres': centres,
-        **result
+        'total_count': paginator.count,
+        'total_pages': paginator.num_pages,
+        # Préserver les filtres dans le contexte
+        'current_search': search_query,
+        'current_centre': centre_id,
+        'current_subscriber': is_subscriber,
+        'current_gender': gender,
     }
     
     return render(request, 'hospital/patients/list.html', context)

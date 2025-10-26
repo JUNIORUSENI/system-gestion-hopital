@@ -3,6 +3,7 @@ Système de permissions centralisé pour le projet hospital
 """
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import AnonymousUser
+
 from .models import Patient, Consultation, Hospitalisation, Emergency
 
 
@@ -26,24 +27,35 @@ class IsAuthenticated(BasePermission):
 
 
 class IsAdmin(BasePermission):
-    """Permission pour les administrateurs"""
+    """Permission pour les administrateurs (ADMIN uniquement)"""
     
     def has_permission(self, request, view, obj=None):
         return (
-            request.user.is_authenticated and 
-            hasattr(request.user, 'profile') and 
+            request.user.is_authenticated and
+            hasattr(request.user, 'profile') and
             request.user.profile.role == 'ADMIN'
         )
 
 
 class IsMedicalAdmin(BasePermission):
-    """Permission pour les médecins administrateurs"""
+    """Permission pour les médecins administrateurs (a TOUS les droits)"""
     
     def has_permission(self, request, view, obj=None):
         return (
-            request.user.is_authenticated and 
-            hasattr(request.user, 'profile') and 
+            request.user.is_authenticated and
+            hasattr(request.user, 'profile') and
             request.user.profile.role == 'MEDICAL_ADMIN'
+        )
+
+
+class IsAdminOrMedicalAdmin(BasePermission):
+    """Permission pour les administrateurs (ADMIN ou MEDICAL_ADMIN)"""
+    
+    def has_permission(self, request, view, obj=None):
+        return (
+            request.user.is_authenticated and
+            hasattr(request.user, 'profile') and
+            request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']
         )
 
 
@@ -186,13 +198,14 @@ class CanManagePatientMedicalData(BasePermission):
 
 
 class CanManageUsers(BasePermission):
-    """Permission pour gérer les utilisateurs"""
+    """Permission pour gérer les utilisateurs (gestion via Django Admin uniquement)"""
     
     def has_permission(self, request, view, obj=None):
         if not request.user.is_authenticated or not hasattr(request.user, 'profile'):
             return False
         
-        return request.user.profile.role == 'ADMIN'
+        # Seuls ADMIN et MEDICAL_ADMIN peuvent gérer les utilisateurs
+        return request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']
 
 
 class CanManageCentres(BasePermission):
@@ -202,7 +215,8 @@ class CanManageCentres(BasePermission):
         if not request.user.is_authenticated or not hasattr(request.user, 'profile'):
             return False
         
-        return request.user.profile.role == 'ADMIN'
+        # Seuls ADMIN et MEDICAL_ADMIN peuvent gérer les centres
+        return request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']
 
 
 class CanAccessStatistics(BasePermission):
@@ -224,7 +238,8 @@ class CanManageAppointments(BasePermission):
             return False
         
         user_role = request.user.profile.role
-        return user_role in ['ADMIN', 'DOCTOR']
+        # MEDICAL_ADMIN a aussi les droits de médecin donc peut gérer les rendez-vous
+        return user_role in ['ADMIN', 'MEDICAL_ADMIN', 'DOCTOR']
 
 
 # Classe request factice pour les fonctions utilitaires

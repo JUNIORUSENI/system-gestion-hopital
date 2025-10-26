@@ -1,6 +1,8 @@
 """
 Vues de base et mixins pour l'application hospital
 """
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
@@ -12,11 +14,12 @@ from django.utils import timezone
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
-from datetime import timedelta
-from django.db.models import Count
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
+from django.contrib.auth.models import User
+
 from ..models import Patient, Consultation, Hospitalisation, Emergency, Centre, Profile, Appointment
 from ..forms import PatientForm, ConsultationForm, HospitalisationForm, EmergencyForm, CentreForm, UserRegistrationForm, AppointmentForm
-from django.contrib.auth.models import User
 from ..permissions import check_patient_access, can_access_medical_data, can_manage_patient_admin_data, can_manage_patient_medical_data
 
 
@@ -53,14 +56,23 @@ def dashboard(request):
     if request.user.is_authenticated:
         if hasattr(request.user, 'profile'):
             role = request.user.profile.role
+            
+            # Dashboard pour ADMIN et MEDICAL_ADMIN (vue globale)
             if role in ['ADMIN', 'MEDICAL_ADMIN']:
-                # Statistiques pour l'administrateur et le médecin administrateur
                 total_patients = Patient.objects.count()
                 total_consultations = Consultation.objects.count()
                 total_hospitalisations = Hospitalisation.objects.count()
                 total_emergencies = Emergency.objects.count()
                 total_users = User.objects.count()
                 total_centres = Centre.objects.count()
+                
+                # Patients récents
+                recent_patients = Patient.objects.all().order_by('-created_at')[:5]
+                
+                # Consultations récentes
+                recent_consultations = Consultation.objects.all().select_related(
+                    'patient', 'doctor', 'centre'
+                ).order_by('-date')[:5]
                 
                 context = {
                     'role': role,
@@ -70,61 +82,147 @@ def dashboard(request):
                     'total_emergencies': total_emergencies,
                     'total_users': total_users,
                     'total_centres': total_centres,
+                    'recent_patients': recent_patients,
+                    'recent_consultations': recent_consultations,
                 }
-            elif role in ['DOCTOR', 'MEDICAL_ADMIN']:
-                # Données spécifiques au médecin - maintenant avec accès à tous les patients
-                my_consultations = Consultation.objects.all().order_by('-date')[:10]
-                my_pending_consultations = Consultation.objects.filter(
-                    status__in=['PENDING', 'IN_PROGRESS']
-                ).order_by('-date')[:10]
-                my_completed_consultations = Consultation.objects.filter(
-                    status='COMPLETED'
-                ).order_by('-date')[:10]
-                my_hospitalisations = Hospitalisation.objects.all().order_by('-admission_date')[:10]
-                my_emergencies = Emergency.objects.all().order_by('-admission_time')[:10]
+            
+            # Dashboard pour DOCTOR (ses propres données uniquement)
+            elif role == 'DOCTOR':
+                # Statistiques personnelles du médecin
+                my_patients = Patient.objects.filter(
+                    consultations__doctor=request.user
+                ).distinct()
                 
-                # Récupérer les rendez-vous à venir seulement pour ce médecin
+                my_consultations = Consultation.objects.filter(
+                    doctor=request.user
+                ).select_related('patient', 'centre').order_by('-date')[:10]
+                
+                my_pending_consultations = Consultation.objects.filter(
+                    doctor=request.user,
+                    status__in=['PENDING', 'IN_PROGRESS']
+                ).select_related('patient', 'centre').order_by('-date')[:10]
+                
+                my_completed_consultations = Consultation.objects.filter(
+                    doctor=request.user,
+                    status='COMPLETED'
+                ).select_related('patient', 'centre').order_by('-date')[:10]
+                
+                my_hospitalisations = Hospitalisation.objects.filter(
+                    doctor=request.user
+                ).select_related('patient', 'centre').order_by('-admission_date')[:10]
+                
+                # Hospitalisations actives
+                active_hospitalisations = Hospitalisation.objects.filter(
+                    doctor=request.user,
+                    discharge_date__isnull=True
+                ).select_related('patient', 'centre').order_by('-admission_date')[:5]
+                
+                my_emergencies = Emergency.objects.filter(
+                    doctor=request.user
+                ).select_related('patient', 'centre').order_by('-admission_time')[:10]
+                
+                # Urgences non orientées
+                pending_emergencies = Emergency.objects.filter(
+                    doctor=request.user,
+                    orientation__isnull=True
+                ).select_related('patient', 'centre').order_by('-admission_time')[:5]
+                
+                # Rendez-vous à venir
                 my_appointments = Appointment.objects.filter(
                     doctor=request.user,
                     date__gte=timezone.now()
                 ).exclude(
                     status__in=['COMPLETED', 'CANCELLED']
-                ).order_by('date')[:5]
+                ).select_related('patient', 'centre').order_by('date')[:5]
+                
+                # Statistiques globales
+                total_my_patients = my_patients.count()
+                total_my_consultations = Consultation.objects.filter(doctor=request.user).count()
+                total_my_hospitalisations = Hospitalisation.objects.filter(doctor=request.user).count()
+                total_my_emergencies = Emergency.objects.filter(doctor=request.user).count()
+                total_pending_consultations = my_pending_consultations.count()
+                total_active_hospitalisations = active_hospitalisations.count()
                 
                 context = {
                     'role': role,
+                    'my_patients': my_patients[:5],
                     'my_consultations': my_consultations,
                     'my_pending_consultations': my_pending_consultations,
                     'my_completed_consultations': my_completed_consultations,
                     'my_hospitalisations': my_hospitalisations,
+                    'active_hospitalisations': active_hospitalisations,
                     'my_emergencies': my_emergencies,
+                    'pending_emergencies': pending_emergencies,
                     'my_appointments': my_appointments,
+                    # Statistiques
+                    'total_my_patients': total_my_patients,
+                    'total_my_consultations': total_my_consultations,
+                    'total_my_hospitalisations': total_my_hospitalisations,
+                    'total_my_emergencies': total_my_emergencies,
+                    'total_pending_consultations': total_pending_consultations,
+                    'total_active_hospitalisations': total_active_hospitalisations,
                 }
+            # Dashboard pour SECRETARY
             elif role == 'SECRETARY':
-                # Données spécifiques au secrétaire
-                my_patients = Patient.objects.filter(default_centre__in=request.user.profile.centres.all())
+                # Centres assignés
+                my_centres = request.user.profile.centres.all()
+                
+                # Patients de ses centres
+                my_patients = Patient.objects.filter(
+                    default_centre__in=my_centres
+                ).select_related('default_centre').order_by('-created_at')
+                
+                # Consultations récentes dans ses centres
                 recent_consultations = Consultation.objects.filter(
-                    patient__default_centre__in=request.user.profile.centres.all()
-                ).order_by('-date')[:10]
+                    centre__in=my_centres
+                ).select_related('patient', 'doctor', 'centre').order_by('-date')[:10]
+                
+                # Hospitalisations actives dans ses centres
                 recent_hospitalisations = Hospitalisation.objects.filter(
-                    centre__in=request.user.profile.centres.all()
-                ).order_by('-admission_date')[:10]
+                    centre__in=my_centres
+                ).select_related('patient', 'doctor', 'centre').order_by('-admission_date')[:10]
+                
+                # Statistiques
+                total_patients_in_centres = my_patients.count()
+                active_hospitalisations = recent_hospitalisations.filter(discharge_date__isnull=True).count()
                 
                 context = {
                     'role': role,
-                    'my_patients': my_patients,
+                    'my_patients': my_patients[:5],
+                    'total_patients_in_centres': total_patients_in_centres,
                     'recent_consultations': recent_consultations,
                     'recent_hospitalisations': recent_hospitalisations,
+                    'active_hospitalisations': active_hospitalisations,
+                    'my_centres': my_centres,
                 }
+            
+            # Dashboard pour NURSE
             elif role == 'NURSE':
-                # Données spécifiques à l'infirmier
+                # Centres assignés
+                my_centres = request.user.profile.centres.all()
+                
+                # Patients hospitalisés dans ses centres
                 patients_in_my_centres = Hospitalisation.objects.filter(
-                    centre__in=request.user.profile.centres.all()
-                ).select_related('patient')
+                    centre__in=my_centres,
+                    discharge_date__isnull=True  # Seulement les hospitalisations actives
+                ).select_related('patient', 'doctor', 'centre').order_by('-admission_date')
+                
+                # Urgences récentes dans ses centres
+                recent_emergencies = Emergency.objects.filter(
+                    centre__in=my_centres
+                ).select_related('patient', 'doctor', 'centre').order_by('-admission_time')[:10]
+                
+                # Statistiques
+                total_active_hospitalisations = patients_in_my_centres.count()
+                critical_emergencies = recent_emergencies.filter(triage_level='CRITICAL').count()
                 
                 context = {
                     'role': role,
-                    'patients_in_my_centres': patients_in_my_centres,
+                    'patients_in_my_centres': patients_in_my_centres[:10],
+                    'recent_emergencies': recent_emergencies,
+                    'total_active_hospitalisations': total_active_hospitalisations,
+                    'critical_emergencies': critical_emergencies,
+                    'my_centres': my_centres,
                 }
             else:
                 context = {'role': 'VISITOR'}
@@ -164,6 +262,7 @@ def generate_document(request, patient_id, doc_type):
             'patient': patient,
             'consultation': last_consultation,
             'doctor': request.user,
+            'user': request.user,
             'title': 'Ordonnance'
         }
         return render(request, 'hospital/documents/prescription.html', context)
@@ -180,6 +279,7 @@ def generate_document(request, patient_id, doc_type):
             'hospitalisations': hospitalisations,
             'emergencies': emergencies,
             'doctor': request.user,
+            'user': request.user,
             'title': 'Rapport Médical'
         }
         return render(request, 'hospital/documents/medical_report.html', context)
@@ -195,6 +295,7 @@ def generate_document(request, patient_id, doc_type):
             'patient': patient,
             'hospitalisation': last_hospitalisation,
             'doctor': request.user,
+            'user': request.user,
             'title': 'Compte-rendu de Sortie'
         }
         return render(request, 'hospital/documents/discharge_summary.html', context)
@@ -250,18 +351,42 @@ class CustomLoginView(LoginView):
 
 @login_required
 def doctor_dashboard(request):
-    """Vue du dashboard personnel du médecin"""
-    if request.user.profile.role != 'DOCTOR':
+    """Vue du dashboard personnel du médecin avec informations détaillées"""
+    if request.user.profile.role not in ['DOCTOR', 'MEDICAL_ADMIN']:
         raise PermissionDenied("Accès réservé aux médecins")
     
     # Récupérer les consultations du médecin
-    my_consultations = Consultation.objects.filter(doctor=request.user).order_by('-date')
-    pending_consultations = my_consultations.filter(status='PENDING')
+    my_consultations = Consultation.objects.filter(
+        doctor=request.user
+    ).select_related('patient', 'centre').order_by('-date')
+    
+    pending_consultations = my_consultations.filter(status__in=['PENDING', 'IN_PROGRESS'])
     completed_consultations = my_consultations.filter(status='COMPLETED')
     
+    # Récupérer les hospitalisations du médecin
+    my_hospitalisations = Hospitalisation.objects.filter(
+        doctor=request.user
+    ).select_related('patient', 'centre').order_by('-admission_date')
+    
+    active_hospitalisations = my_hospitalisations.filter(discharge_date__isnull=True)
+    
+    # Récupérer les urgences du médecin
+    my_emergencies = Emergency.objects.filter(
+        doctor=request.user
+    ).select_related('patient', 'centre').order_by('-admission_time')
+    
+    pending_emergencies = my_emergencies.filter(orientation__isnull=True)
+    
     # Récupérer les rendez-vous du médecin
-    my_appointments = Appointment.objects.filter(doctor=request.user).order_by('date')
-    upcoming_appointments = my_appointments.filter(date__gte=timezone.now(), status__in=['SCHEDULED', 'CONFIRMED'])
+    my_appointments = Appointment.objects.filter(
+        doctor=request.user
+    ).select_related('patient', 'centre').order_by('date')
+    
+    upcoming_appointments = my_appointments.filter(
+        date__gte=timezone.now(),
+        status__in=['SCHEDULED', 'CONFIRMED']
+    )
+    
     past_appointments = my_appointments.filter(date__lt=timezone.now())
     
     # Statistiques
@@ -269,13 +394,31 @@ def doctor_dashboard(request):
         consultations__doctor=request.user
     ).distinct().count()
     
+    total_consultations = my_consultations.count()
+    total_hospitalisations = my_hospitalisations.count()
+    total_emergencies = my_emergencies.count()
+    total_appointments = my_appointments.count()
+    
     context = {
-        'role': 'DOCTOR',
-        'pending_consultations': pending_consultations,
-        'completed_consultations': completed_consultations,
-        'upcoming_appointments': upcoming_appointments,
-        'past_appointments': past_appointments,
+        'role': request.user.profile.role,
+        'pending_consultations': pending_consultations[:10],
+        'completed_consultations': completed_consultations[:10],
+        'my_consultations': my_consultations[:10],
+        'my_hospitalisations': my_hospitalisations[:10],
+        'active_hospitalisations': active_hospitalisations,
+        'my_emergencies': my_emergencies[:10],
+        'pending_emergencies': pending_emergencies,
+        'upcoming_appointments': upcoming_appointments[:10],
+        'past_appointments': past_appointments[:10],
         'total_patients': total_patients,
+        'total_consultations': total_consultations,
+        'total_hospitalisations': total_hospitalisations,
+        'total_emergencies': total_emergencies,
+        'total_appointments': total_appointments,
+        'total_pending_consultations': pending_consultations.count(),
+        'total_active_hospitalisations': active_hospitalisations.count(),
+        'total_pending_emergencies': pending_emergencies.count(),
+        'total_upcoming_appointments': upcoming_appointments.count(),
     }
     
     return render(request, 'hospital/doctors/dashboard.html', context)
@@ -414,33 +557,17 @@ def medical_admin_dashboard(request):
 
 @login_required
 def statistics_view(request):
-    """Vue pour la page des statistiques"""
-    # Initialiser les variables
-    total_patients = 0
-    total_consultations = 0
-    total_hospitalisations = 0
-    total_emergencies = 0
-    total_appointments = 0
-    total_users = 0
-    total_centres = 0
+    """Vue pour la page des statistiques - Réservée au MEDICAL_ADMIN"""
+    # Vérifier que l'utilisateur est MEDICAL_ADMIN
+    if request.user.profile.role not in ['MEDICAL_ADMIN']:
+        raise PermissionDenied("Cette page est réservée au Médecin Administrateur")
     
-    # Définir les bases de données selon le rôle
-    if request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']:
-        # Administrateur et Médecin Administrateur: accès à toutes les données
-        base_patients = Patient.objects.all()
-        base_consultations = Consultation.objects.all()
-        base_hospitalisations = Hospitalisation.objects.all()
-        base_emergencies = Emergency.objects.all()
-        base_appointments = Appointment.objects.all()
-        total_users = User.objects.count()
-        total_centres = Centre.objects.count()
-    elif request.user.profile.role == 'DOCTOR':
-        # Médecin: statistiques liées à ses activités
-        base_patients = Patient.objects.filter(consultations__doctor=request.user).distinct()
-        base_consultations = Consultation.objects.filter(doctor=request.user)
-        base_hospitalisations = Hospitalisation.objects.filter(doctor=request.user)
-        base_emergencies = Emergency.objects.filter(doctor=request.user)
-        base_appointments = Appointment.objects.filter(doctor=request.user)
+    # Statistiques globales pour MEDICAL_ADMIN uniquement
+    base_patients = Patient.objects.all()
+    base_consultations = Consultation.objects.all()
+    base_hospitalisations = Hospitalisation.objects.all()
+    base_emergencies = Emergency.objects.all()
+    base_appointments = Appointment.objects.all()
     
     # Calculer les totaux
     total_patients = base_patients.count()
@@ -448,6 +575,13 @@ def statistics_view(request):
     total_hospitalisations = base_hospitalisations.count()
     total_emergencies = base_emergencies.count()
     total_appointments = base_appointments.count()
+    total_users = User.objects.count()
+    total_centres = Centre.objects.count()
+    
+    # Statistiques du personnel
+    total_doctors = User.objects.filter(profile__role='DOCTOR').count()
+    total_nurses = User.objects.filter(profile__role='NURSE').count()
+    total_secretaries = User.objects.filter(profile__role='SECRETARY').count()
     
     # Calculer des statistiques supplémentaires
     # Consultations par statut
@@ -520,6 +654,25 @@ def statistics_view(request):
         })
     consultations_last_6_months.reverse()
     
+    # Top médecins par consultations
+    doctors_with_consultations = []
+    doctors = User.objects.filter(profile__role='DOCTOR')
+    for doctor in doctors:
+        consultation_count = Consultation.objects.filter(doctor=doctor).count()
+        if consultation_count > 0:
+            doctors_with_consultations.append({
+                'doctor': doctor,
+                'count': consultation_count,
+                'full_name': doctor.get_full_name() or doctor.username
+            })
+    doctors_with_consultations.sort(key=lambda x: x['count'], reverse=True)
+    top_doctors = doctors_with_consultations[:10]
+    
+    # Rendez-vous par statut
+    appointments_by_status = {}
+    for status in ['SCHEDULED', 'CONFIRMED', 'COMPLETED', 'CANCELLED']:
+        appointments_by_status[status] = Appointment.objects.filter(status=status).count()
+    
     context = {
         'total_patients': total_patients,
         'total_consultations': total_consultations,
@@ -528,6 +681,9 @@ def statistics_view(request):
         'total_appointments': total_appointments,
         'total_users': total_users,
         'total_centres': total_centres,
+        'total_doctors': total_doctors,
+        'total_nurses': total_nurses,
+        'total_secretaries': total_secretaries,
         'active_hospitalisations': active_hospitalisations,
         'consultations_by_status': consultations_by_status,
         'consultations_by_centre': consultations_by_centre,
@@ -536,7 +692,189 @@ def statistics_view(request):
         'patients_by_gender': patients_by_gender,
         'hospitalisations_by_service': hospitalisations_by_service,
         'consultations_last_6_months': consultations_last_6_months,
+        'appointments_by_status': appointments_by_status,
+        'top_doctors': top_doctors,
         'user_role': request.user.profile.role,
     }
     
     return render(request, 'hospital/statistics.html', context)
+
+
+@login_required
+def doctor_my_consultations(request):
+    """Vue dédiée pour toutes les consultations du médecin"""
+    if request.user.profile.role not in ['DOCTOR', 'MEDICAL_ADMIN']:
+        raise PermissionDenied("Accès réservé aux médecins")
+    
+    from django.core.paginator import Paginator
+    
+    # Récupérer les paramètres
+    search_query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    page = request.GET.get('page', 1)
+    
+    # Récupérer les consultations du médecin
+    consultations = Consultation.objects.filter(doctor=request.user)
+    
+    # Appliquer la recherche
+    if search_query:
+        consultations = consultations.filter(
+            Q(id__icontains=search_query) |
+            Q(patient__first_name__icontains=search_query) |
+            Q(patient__last_name__icontains=search_query) |
+            Q(patient__postname__icontains=search_query)
+        )
+    
+    # Filtre par statut
+    if status_filter:
+        consultations = consultations.filter(status=status_filter)
+    
+    # Optimiser
+    consultations = consultations.select_related('patient', 'centre').order_by('-date')
+    
+    # Pagination
+    paginator = Paginator(consultations, 25)
+    page_obj = paginator.get_page(page)
+    
+    return render(request, 'hospital/doctors/my_consultations.html', {
+        'consultations': page_obj,
+        'page_obj': page_obj,
+        'current_search': search_query,
+        'current_status': status_filter,
+        'total_count': paginator.count,
+    })
+
+
+@login_required
+def doctor_my_hospitalisations(request):
+    """Vue dédiée pour toutes les hospitalisations du médecin"""
+    if request.user.profile.role not in ['DOCTOR', 'MEDICAL_ADMIN']:
+        raise PermissionDenied("Accès réservé aux médecins")
+    
+    from django.core.paginator import Paginator
+    
+    # Récupérer les paramètres
+    search_query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    page = request.GET.get('page', 1)
+    
+    # Récupérer les hospitalisations du médecin
+    hospitalisations = Hospitalisation.objects.filter(doctor=request.user)
+    
+    # Appliquer la recherche
+    if search_query:
+        hospitalisations = hospitalisations.filter(
+            Q(id__icontains=search_query) |
+            Q(patient__first_name__icontains=search_query) |
+            Q(patient__last_name__icontains=search_query) |
+            Q(patient__postname__icontains=search_query) |
+            Q(service__icontains=search_query)
+        )
+    
+    # Filtre par statut
+    if status_filter == 'active':
+        hospitalisations = hospitalisations.filter(discharge_date__isnull=True)
+    elif status_filter == 'discharged':
+        hospitalisations = hospitalisations.filter(discharge_date__isnull=False)
+    
+    # Optimiser
+    hospitalisations = hospitalisations.select_related('patient', 'centre').order_by('-admission_date')
+    
+    # Pagination
+    paginator = Paginator(hospitalisations, 25)
+    page_obj = paginator.get_page(page)
+    
+    return render(request, 'hospital/doctors/my_hospitalisations.html', {
+        'hospitalisations': page_obj,
+        'page_obj': page_obj,
+        'current_search': search_query,
+        'current_status': status_filter,
+        'total_count': paginator.count,
+    })
+
+
+@login_required
+def doctor_my_emergencies(request):
+    """Vue dédiée pour toutes les urgences du médecin"""
+    if request.user.profile.role not in ['DOCTOR', 'MEDICAL_ADMIN']:
+        raise PermissionDenied("Accès réservé aux médecins")
+    
+    from django.core.paginator import Paginator
+    
+    # Récupérer les paramètres
+    search_query = request.GET.get('q', '').strip()
+    triage_filter = request.GET.get('triage', '').strip()
+    page = request.GET.get('page', 1)
+    
+    # Récupérer les urgences du médecin
+    emergencies = Emergency.objects.filter(doctor=request.user)
+    
+    # Appliquer la recherche
+    if search_query:
+        emergencies = emergencies.filter(
+            Q(id__icontains=search_query) |
+            Q(patient__first_name__icontains=search_query) |
+            Q(patient__last_name__icontains=search_query) |
+            Q(patient__postname__icontains=search_query)
+        )
+    
+    # Filtre par triage
+    if triage_filter:
+        emergencies = emergencies.filter(triage_level=triage_filter)
+    
+    # Optimiser
+    emergencies = emergencies.select_related('patient', 'centre').order_by('-admission_time')
+    
+    # Pagination
+    paginator = Paginator(emergencies, 25)
+    page_obj = paginator.get_page(page)
+    
+    return render(request, 'hospital/doctors/my_emergencies.html', {
+        'emergencies': page_obj,
+        'page_obj': page_obj,
+        'current_search': search_query,
+        'current_triage': triage_filter,
+        'total_count': paginator.count,
+    })
+
+
+@login_required
+def doctor_my_patients(request):
+    """Vue dédiée pour tous les patients du médecin"""
+    if request.user.profile.role not in ['DOCTOR', 'MEDICAL_ADMIN']:
+        raise PermissionDenied("Accès réservé aux médecins")
+    
+    from django.core.paginator import Paginator
+    
+    # Récupérer les paramètres
+    search_query = request.GET.get('q', '').strip()
+    page = request.GET.get('page', 1)
+    
+    # Récupérer les patients du médecin (via consultations)
+    patients = Patient.objects.filter(
+        consultations__doctor=request.user
+    ).distinct()
+    
+    # Appliquer la recherche
+    if search_query:
+        patients = patients.filter(
+            Q(id__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(postname__icontains=search_query) |
+            Q(phone__icontains=search_query)
+        )
+    
+    # Optimiser
+    patients = patients.select_related('default_centre').order_by('last_name', 'first_name')
+    
+    # Pagination
+    paginator = Paginator(patients, 25)
+    page_obj = paginator.get_page(page)
+    
+    return render(request, 'hospital/doctors/my_patients.html', {
+        'patients': page_obj,
+        'page_obj': page_obj,
+        'current_search': search_query,
+        'total_count': paginator.count,
+    })

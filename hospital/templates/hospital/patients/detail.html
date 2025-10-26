@@ -38,13 +38,7 @@
                             {% endif %}
                             <p class="mb-1"><strong>Prénom:</strong> {{ patient.first_name }}</p>
                             <p class="mb-1"><strong>Date de naissance:</strong> {{ patient.date_of_birth|date:"d/m/Y" }}</p>
-                            <p class="mb-1"><strong>Âge:</strong>
-                                {% with "now"|date:"Y" as current_year %}
-                                    {% with patient.date_of_birth|date:"Y" as birth_year %}
-                                        {{ current_year|add:"0"|sub:birth_year }} ans
-                                    {% endwith %}
-                                {% endwith %}
-                            </p>
+                            <p class="mb-1"><strong>Âge:</strong> {{ patient.age }} ans</p>
                             <p class="mb-1"><strong>Sexe:</strong> 
                                 {% if patient.gender == 'M' %}Homme{% else %}Femme{% endif %}
                             </p>

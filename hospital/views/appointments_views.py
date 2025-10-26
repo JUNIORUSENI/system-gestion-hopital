@@ -6,11 +6,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.utils import timezone
+from django.contrib.auth.models import User
+
 from ..models import Patient, Appointment, Centre
 from ..forms import AppointmentForm
 from ..permissions import check_patient_access
-from django.contrib.auth.models import User
 
 
 @login_required
@@ -67,7 +69,7 @@ def appointment_list(request):
 def appointment_create(request):
     """Vue pour créer un rendez-vous"""
     # Vérifier que l'utilisateur est un médecin ou admin
-    if not (request.user.profile.role in ['DOCTOR', 'ADMIN']):
+    if not (request.user.profile.role in ['DOCTOR', 'ADMIN', 'MEDICAL_ADMIN']):
         raise PermissionDenied("Seuls les médecins et administrateurs peuvent créer des rendez-vous")
     
     if request.method == 'POST':
@@ -105,20 +107,19 @@ def appointment_create(request):
     else:
         form = AppointmentForm(initial={'date': timezone.now()})
         # Si l'utilisateur est médecin, assigner par défaut
-        if request.user.profile.role == 'DOCTOR':
+        if request.user.profile.role in ['DOCTOR', 'MEDICAL_ADMIN']:
             # Initialiser le formulaire avec le médecin connecté
             form.fields['doctor'].initial = request.user.id
     
-    # Filtrer les patients selon les droits d'accès de l'utilisateur
-    if request.user.profile.role == 'ADMIN':
+    # Les médecins peuvent créer des rendez-vous dans TOUS les centres
+    if request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']:
         form.fields['patient'].queryset = Patient.objects.all()
         form.fields['centre'].queryset = Centre.objects.all()
         form.fields['doctor'].queryset = User.objects.filter(profile__role='DOCTOR')
     elif request.user.profile.role == 'DOCTOR':
-        form.fields['patient'].queryset = Patient.objects.filter(
-            default_centre__in=request.user.profile.centres.all()
-        )
-        form.fields['centre'].queryset = request.user.profile.centres.all()
+        # Les médecins peuvent voir tous les patients et tous les centres
+        form.fields['patient'].queryset = Patient.objects.all()
+        form.fields['centre'].queryset = Centre.objects.all()  # TOUS les centres
         form.fields['doctor'].queryset = User.objects.filter(id=request.user.id)
     
     return render(request, 'hospital/appointments/form.html', {
@@ -185,16 +186,15 @@ def appointment_edit(request, appointment_id):
     else:
         form = AppointmentForm(instance=appointment)
     
-    # Filtrer les patients selon les droits d'accès de l'utilisateur
-    if request.user.profile.role == 'ADMIN':
+    # Les médecins peuvent éditer des rendez-vous dans tous les centres
+    if request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']:
         form.fields['patient'].queryset = Patient.objects.all()
         form.fields['centre'].queryset = Centre.objects.all()
         form.fields['doctor'].queryset = User.objects.filter(profile__role='DOCTOR')
     elif request.user.profile.role == 'DOCTOR':
-        form.fields['patient'].queryset = Patient.objects.filter(
-            default_centre__in=request.user.profile.centres.all()
-        )
-        form.fields['centre'].queryset = request.user.profile.centres.all()
+        # Les médecins peuvent voir tous les patients et tous les centres
+        form.fields['patient'].queryset = Patient.objects.all()
+        form.fields['centre'].queryset = Centre.objects.all()  # TOUS les centres
         form.fields['doctor'].queryset = User.objects.filter(id=request.user.id)
     
     return render(request, 'hospital/appointments/form.html', {

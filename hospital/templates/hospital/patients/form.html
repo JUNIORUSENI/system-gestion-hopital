@@ -1,263 +1,272 @@
-{% load static %}
+<div class="modal-header" style="background: linear-gradient(135deg, #1a2a4c, #2c3e50); color: white;">
+    <h5 class="modal-title fw-bold">
+        <i class="fas fa-user-plus me-2"></i>{{ title }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
 
-{% include 'hospital/partials/form.html' with
-    title=title
-    icon='user-plus'
-    submit_text='Enregistrer'
-    submit_icon='save'
-    htmx=true
-    form_action_url=form_action_url %}
-
-{% block form_fields %}
-<div class="container-fluid p-0">
-    <!-- Informations de base -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h6 class="text-primary fw-bold mb-3">
+<form method="post" 
+      class="modal-form"
+      {% if patient %}hx-post="{% url 'edit_patient' patient.id %}"{% else %}hx-post="{% url 'create_patient_form' %}"{% endif %}
+      hx-target="#modal-container"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    
+    <div class="modal-body" style="background-color: #f8f9fa; max-height: 70vh; overflow-y: auto;">
+        <!-- Section: Informations de base -->
+        <div class="mb-4">
+            <h6 class="text-primary fw-bold mb-3 pb-2 border-bottom">
                 <i class="fas fa-user me-2"></i>Informations de base
             </h6>
-        </div>
-        <div class="col-md-4">
-            <div class="form-floating mb-3">
-                {{ form.first_name }}
-                <label for="{{ form.first_name.id_for_label }}">Prénom *</label>
-                {% if form.first_name.errors %}
-                    <div class="invalid-feedback d-block">{{ form.first_name.errors|join:", " }}</div>
-                {% endif %}
+            
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold text-dark">Prénom *</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.first_name.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.postname.id_for_label }}" class="form-label fw-semibold text-dark">Postnom</label>
+                    {{ form.postname }}
+                    {% if form.postname.errors %}
+                        <div class="invalid-feedback d-block">{{ form.postname.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold text-dark">Nom *</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.last_name.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="form-floating mb-3">
-                {{ form.postname }}
-                <label for="{{ form.postname.id_for_label }}">Postnom</label>
-                {% if form.postname.errors %}
-                    <div class="invalid-feedback d-block">{{ form.postname.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="form-floating mb-3">
-                {{ form.last_name }}
-                <label for="{{ form.last_name.id_for_label }}">Nom *</label>
-                {% if form.last_name.errors %}
-                    <div class="invalid-feedback d-block">{{ form.last_name.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 
-    <!-- Informations personnelles -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h6 class="text-primary fw-bold mb-3">
+        <!-- Section: Informations personnelles -->
+        <div class="mb-4">
+            <h6 class="text-primary fw-bold mb-3 pb-2 border-bottom">
                 <i class="fas fa-id-card me-2"></i>Informations personnelles
             </h6>
-        </div>
-        <div class="col-md-6">
-            <div class="form-floating mb-3">
-                {{ form.date_of_birth }}
-                <label for="{{ form.date_of_birth.id_for_label }}">Date de naissance *</label>
-                {% if form.date_of_birth.errors %}
-                    <div class="invalid-feedback d-block">{{ form.date_of_birth.errors|join:", " }}</div>
-                {% endif %}
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="{{ form.date_of_birth.id_for_label }}" class="form-label fw-semibold text-dark">Date de naissance *</label>
+                    {{ form.date_of_birth }}
+                    <small class="text-muted">Format : JJ/MM/AAAA</small>
+                    {% if form.date_of_birth.errors %}
+                        <div class="invalid-feedback d-block">{{ form.date_of_birth.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.gender.id_for_label }}" class="form-label fw-semibold text-dark">Genre *</label>
+                    {{ form.gender }}
+                    {% if form.gender.errors %}
+                        <div class="invalid-feedback d-block">{{ form.gender.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="{{ form.phone.id_for_label }}" class="form-label fw-semibold text-dark">Téléphone</label>
+                    {{ form.phone }}
+                    <small class="text-muted">Format : +243XXXXXXXXX ou 0XXXXXXXXX</small>
+                    {% if form.phone.errors %}
+                        <div class="invalid-feedback d-block">{{ form.phone.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.emergency_contact.id_for_label }}" class="form-label fw-semibold text-dark">Contact d'urgence</label>
+                    {{ form.emergency_contact }}
+                    <small class="text-muted">Format : +243XXXXXXXXX ou 0XXXXXXXXX</small>
+                    {% if form.emergency_contact.errors %}
+                        <div class="invalid-feedback d-block">{{ form.emergency_contact.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label for="{{ form.address.id_for_label }}" class="form-label fw-semibold text-dark">Adresse complète</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                        <div class="invalid-feedback d-block">{{ form.address.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="form-floating mb-3">
-                {{ form.gender }}
-                <label for="{{ form.gender.id_for_label }}">Genre *</label>
-                {% if form.gender.errors %}
-                    <div class="invalid-feedback d-block">{{ form.gender.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-floating mb-3">
-                {{ form.phone }}
-                <label for="{{ form.phone.id_for_label }}">Téléphone</label>
-                {% if form.phone.errors %}
-                    <div class="invalid-feedback d-block">{{ form.phone.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-floating mb-3">
-                {{ form.emergency_contact }}
-                <label for="{{ form.emergency_contact.id_for_label }}">Contact d'urgence</label>
-                {% if form.emergency_contact.errors %}
-                    <div class="invalid-feedback d-block">{{ form.emergency_contact.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-12">
-            <div class="form-floating mb-3">
-                {{ form.address }}
-                <label for="{{ form.address.id_for_label }}">Adresse</label>
-                {% if form.address.errors %}
-                    <div class="invalid-feedback d-block">{{ form.address.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 
-    <!-- Statut et centre -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h6 class="text-primary fw-bold mb-3">
+        <!-- Section: Statut et centre -->
+        <div class="mb-4">
+            <h6 class="text-primary fw-bold mb-3 pb-2 border-bottom">
                 <i class="fas fa-hospital me-2"></i>Statut et centre
             </h6>
-        </div>
-        <div class="col-md-6">
-            <div class="form-check form-switch mt-3 mb-3">
-                <input class="form-check-input" type="checkbox" id="{{ form.is_subscriber.id_for_label }}" name="{{ form.is_subscriber.html_name }}" 
-                       {% if form.is_subscriber.value %}checked{% endif %}>
-                <label class="form-check-label" for="{{ form.is_subscriber.id_for_label }}">
-                    <strong>Abonné au centre</strong>
-                    <small class="d-block text-muted">Cochez si le patient est abonné</small>
-                </label>
-                {% if form.is_subscriber.errors %}
-                    <div class="invalid-feedback d-block">{{ form.is_subscriber.errors|join:", " }}</div>
-                {% endif %}
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check form-switch p-3 bg-white rounded border">
+                        {{ form.is_subscriber }}
+                        <label class="form-check-label fw-semibold text-dark" for="{{ form.is_subscriber.id_for_label }}">
+                            Abonné au centre
+                        </label>
+                        <small class="d-block text-muted mt-1">Cochez si le patient est abonné</small>
+                        {% if form.is_subscriber.errors %}
+                            <div class="invalid-feedback d-block">{{ form.is_subscriber.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.default_centre.id_for_label }}" class="form-label fw-semibold text-dark">Centre habituel</label>
+                    {{ form.default_centre }}
+                    {% if form.default_centre.errors %}
+                        <div class="invalid-feedback d-block">{{ form.default_centre.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="form-floating mb-3">
-                {{ form.default_centre }}
-                <label for="{{ form.default_centre.id_for_label }}">Centre habituel *</label>
-                {% if form.default_centre.errors %}
-                    <div class="invalid-feedback d-block">{{ form.default_centre.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 
-    <!-- Informations médicales -->
-    {% if can_edit_medical %}
-    <div class="row">
-        <div class="col-12">
-            <h6 class="text-primary fw-bold mb-3">
+        <!-- Section: Informations médicales (uniquement pour médecins) -->
+        {% if can_edit_medical %}
+        <div class="mb-4">
+            <h6 class="text-danger fw-bold mb-3 pb-2 border-bottom">
                 <i class="fas fa-heartbeat me-2"></i>Informations médicales
             </h6>
-        </div>
-        <div class="col-12">
-            <div class="form-floating mb-3">
-                {{ form.medical_history }}
-                <label for="{{ form.medical_history.id_for_label }}">Antécédents médicaux</label>
-                {% if form.medical_history.errors %}
-                    <div class="invalid-feedback d-block">{{ form.medical_history.errors|join:", " }}</div>
-                {% endif %}
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label for="{{ form.medical_history.id_for_label }}" class="form-label fw-semibold text-dark">Antécédents médicaux</label>
+                    {{ form.medical_history }}
+                    {% if form.medical_history.errors %}
+                        <div class="invalid-feedback d-block">{{ form.medical_history.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label for="{{ form.allergies.id_for_label }}" class="form-label fw-semibold text-dark">Allergies connues</label>
+                    {{ form.allergies }}
+                    {% if form.allergies.errors %}
+                        <div class="invalid-feedback d-block">{{ form.allergies.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label for="{{ form.vaccinations.id_for_label }}" class="form-label fw-semibold text-dark">Historique vaccinal</label>
+                    {{ form.vaccinations }}
+                    {% if form.vaccinations.errors %}
+                        <div class="invalid-feedback d-block">{{ form.vaccinations.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label for="{{ form.lifestyle.id_for_label }}" class="form-label fw-semibold text-dark">Habitudes de vie</label>
+                    {{ form.lifestyle }}
+                    {% if form.lifestyle.errors %}
+                        <div class="invalid-feedback d-block">{{ form.lifestyle.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="col-12">
-            <div class="form-floating mb-3">
-                {{ form.allergies }}
-                <label for="{{ form.allergies.id_for_label }}">Allergies</label>
-                {% if form.allergies.errors %}
-                    <div class="invalid-feedback d-block">{{ form.allergies.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-12">
-            <div class="form-floating mb-3">
-                {{ form.vaccinations }}
-                <label for="{{ form.vaccinations.id_for_label }}">Vaccinations</label>
-                {% if form.vaccinations.errors %}
-                    <div class="invalid-feedback d-block">{{ form.vaccinations.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-12">
-            <div class="form-floating mb-3">
-                {{ form.lifestyle }}
-                <label for="{{ form.lifestyle.id_for_label }}">Habitudes de vie</label>
-                {% if form.lifestyle.errors %}
-                    <div class="invalid-feedback d-block">{{ form.lifestyle.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <div class="alert alert-info mt-3">
-        <i class="fas fa-info-circle me-2"></i>
-        <strong>Informations médicales</strong><br>
-        Les informations médicales ne sont pas modifiables par votre rôle. 
-        {% if user.profile and user.profile.role == 'SECRETARY' %}
-        Veuillez orienter le patient vers un médecin pour la mise à jour de ces données.
         {% else %}
-        Veuillez contacter un médecin pour mettre à jour ces données.
+        <div class="alert alert-info border-start border-4 border-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Informations médicales</strong><br>
+            Les informations médicales ne sont pas modifiables avec votre rôle. Seuls les médecins peuvent mettre à jour ces données.
+        </div>
         {% endif %}
     </div>
-    {% endif %}
-</div>
-{% endblock %}
+    
+    <div class="modal-footer bg-light" style="border-top: 1px solid #dee2e6;">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Annuler
+        </button>
+        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="fas fa-save me-2"></i>Enregistrer
+        </button>
+    </div>
+</form>
+
+<script>
+    // S'assurer que tous les champs ont les bonnes classes Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.modal-body input, .modal-body select, .modal-body textarea').forEach(function(element) {
+            if (!element.classList.contains('form-control') && 
+                !element.classList.contains('form-select') && 
+                !element.classList.contains('form-check-input') &&
+                element.type !== 'hidden') {
+                
+                if (element.tagName === 'SELECT') {
+                    element.classList.add('form-select');
+                } else if (element.tagName === 'TEXTAREA') {
+                    element.classList.add('form-control');
+                } else if (element.type === 'checkbox') {
+                    element.classList.add('form-check-input');
+                } else {
+                    element.classList.add('form-control');
+                }
+            }
+        });
+    });
+</script>
 
 <style>
-.form-floating {
-    position: relative;
+/* Styles cohérents pour le formulaire patient */
+.modal-body {
+    font-size: 0.95rem;
 }
 
-.form-floating > .form-control,
-.form-floating > .form-select {
-    height: calc(3.5rem + 2px);
-    line-height: 1.25;
-    padding: 1rem 0.75rem;
+.form-label {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
 }
 
-.form-floating > label {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    padding: 1rem 0.75rem;
-    pointer-events: none;
-    border: 1px solid transparent;
-    transform-origin: 0 0;
-    transition: opacity .1s ease-in-out,transform .1s ease-in-out;
+.form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    font-size: 0.95rem;
 }
 
-.form-floating > .form-control:focus ~ label,
-.form-floating > .form-control:not(:placeholder-shown) ~ label,
-.form-floating > .form-select ~ label {
-    opacity: .65;
-    transform: scale(.85) translateY(-0.5rem) translateX(0.15rem);
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: var(--primary-color);
+.form-control:focus, .form-select:focus {
+    border-color: #3498db;
     box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
 }
 
 textarea.form-control {
     resize: vertical;
-    min-height: 100px;
+    min-height: 80px;
+}
+
+h6.text-primary, h6.text-danger {
+    font-size: 1rem;
+    margin-top: 1rem;
 }
 
 .form-check-input:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background-color: #3498db;
+    border-color: #3498db;
 }
 
 .alert-info {
     background-color: rgba(52, 152, 219, 0.1);
-    border-left: 4px solid var(--primary-color);
+    border-color: #3498db;
 }
 
-h6.text-primary {
-    border-bottom: 2px solid rgba(52, 152, 219, 0.2);
-    padding-bottom: 0.5rem;
+small.text-muted {
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 0.25rem;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .form-floating > .form-control,
-    .form-floating > .form-select {
-        height: calc(3rem + 2px);
-        padding: 0.75rem 0.5rem;
-    }
-    
-    .form-floating > label {
-        padding: 0.75rem 0.5rem;
-    }
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
 }
 </style>

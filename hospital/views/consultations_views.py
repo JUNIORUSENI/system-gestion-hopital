@@ -6,7 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.utils import timezone
+from django.db.models import Q
+
 from ..models import Patient, Consultation
 from ..forms import ConsultationForm
 from ..permissions import check_patient_access, can_manage_patient_medical_data
@@ -28,14 +31,17 @@ def consultation_detail(request, consultation_id):
 
 @login_required
 def consultation_list(request):
-    """Vue pour la liste des consultations avec pagination"""
-    from django.core.paginator import Paginator
+    """Vue pour la liste des consultations avec pagination et recherche"""
+    # Récupérer les paramètres de recherche et filtrage
+    search_query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    page = request.GET.get('page', 1)
     
     # Les administrateurs peuvent voir toutes les consultations
     if request.user.profile.role in ['ADMIN', 'MEDICAL_ADMIN']:
         consultations = Consultation.objects.all()
     elif request.user.profile.role == 'DOCTOR':
-        # Les médecins peuvent voir toutes les consultations des patients de tous les centres
+        # Les médecins voient toutes les consultations
         consultations = Consultation.objects.all()
     elif request.user.profile.role in ['SECRETARY', 'NURSE']:
         # Les secrétaires et infirmiers voient les consultations des patients de leurs centres
@@ -43,14 +49,34 @@ def consultation_list(request):
     else:
         consultations = Consultation.objects.none()
     
+    # Appliquer la recherche
+    if search_query:
+        consultations = consultations.filter(
+            Q(id__icontains=search_query) |
+            Q(patient__first_name__icontains=search_query) |
+            Q(patient__last_name__icontains=search_query) |
+            Q(patient__postname__icontains=search_query) |
+            Q(reason__icontains=search_query) |
+            Q(diagnosis__icontains=search_query)
+        )
+    
+    # Filtre par statut
+    if status_filter:
+        consultations = consultations.filter(status=status_filter)
+    
+    # Optimiser avec select_related
+    consultations = consultations.select_related('patient', 'doctor', 'centre').order_by('-date')
+    
     # Pagination
-    paginator = Paginator(consultations, 25)  # 25 consultations par page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(consultations, 25)
+    page_obj = paginator.get_page(page)
     
     return render(request, 'hospital/consultations/list.html', {
         'consultations': page_obj,
-        'page_obj': page_obj
+        'page_obj': page_obj,
+        'current_search': search_query,
+        'current_status': status_filter,
+        'total_count': paginator.count,
     })
 
 
@@ -149,6 +175,7 @@ def consultation_create(request):
     return render(request, 'hospital/consultations/form.html', {
         'patients': filtered_patients,
         'selected_patient': selected_patient,
+        'selected_patient_id': selected_patient_id,  # Passer l'ID aussi
         'title': 'Créer une nouvelle consultation'
     })
 

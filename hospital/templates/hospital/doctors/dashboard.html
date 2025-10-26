@@ -1,41 +1,118 @@
 {% extends 'hospital/base.html' %}
 
-{% block title %}Espace Médecin{% endblock %}
+{% block title %}Espace Médecin - {{ block.super }}{% endblock %}
+
+{% block page_title %}Mon Espace Médecin{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <h2>Mon Espace Personnel - Médecin</h2>
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <div class="welcome-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <h2 class="display-5 fw-bold">Bienvenue Dr {{ user.get_full_name|default:user.username }}</h2>
+                <p class="lead">Vue d'ensemble de votre activité médicale</p>
+            </div>
+        </div>
+    </div>
     
+    <!-- Statistiques principales -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Mes Patients</h5>
-                    <h3>{{ total_patients }}</h3>
+            <a href="{% url 'doctor_my_patients' %}" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="card-body text-center">
+                        <div class="stat-icon bg-primary-gradient mx-auto">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="fw-bold">{{ total_patients }}</h3>
+                        <p class="text-muted mb-0">Mes Patients</p>
+                        <small class="text-primary">Cliquez pour voir tous</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'doctor_my_consultations' %}?status=PENDING" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="card-body text-center">
+                        <div class="stat-icon bg-warning-gradient mx-auto">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3 class="fw-bold">{{ total_pending_consultations }}</h3>
+                        <p class="text-muted mb-0">Consultations en attente</p>
+                        <small class="text-warning">Cliquez pour voir toutes</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'doctor_my_hospitalisations' %}?status=active" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="card-body text-center">
+                        <div class="stat-icon bg-info-gradient mx-auto">
+                            <i class="fas fa-procedures"></i>
+                        </div>
+                        <h3 class="fw-bold">{{ total_active_hospitalisations }}</h3>
+                        <p class="text-muted mb-0">Hospitalisations actives</p>
+                        <small class="text-info">Cliquez pour voir toutes</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success-gradient mx-auto">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3 class="fw-bold">{{ total_upcoming_appointments }}</h3>
+                    <p class="text-muted mb-0">Rendez-vous à venir</p>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Statistiques secondaires -->
+    <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">Consultations en attente</h5>
-                    <h3>{{ pending_consultations|length }}</h3>
+            <a href="{% url 'doctor_my_consultations' %}" class="text-decoration-none">
+                <div class="main-card">
+                    <div class="card-body text-center">
+                        <h4 class="fw-bold text-primary">{{ total_consultations }}</h4>
+                        <p class="text-muted mb-0">Total consultations</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h5 class="card-title">Consultations terminées</h5>
-                    <h3>{{ completed_consultations|length }}</h3>
+            <a href="{% url 'doctor_my_hospitalisations' %}" class="text-decoration-none">
+                <div class="main-card">
+                    <div class="card-body text-center">
+                        <h4 class="fw-bold text-warning">{{ total_hospitalisations }}</h4>
+                        <p class="text-muted mb-0">Total hospitalisations</p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-warning">
-                <div class="card-body">
-                    <h5 class="card-title">Rendez-vous à venir</h5>
-                    <h3>{{ upcoming_appointments|length }}</h3>
+            <a href="{% url 'doctor_my_emergencies' %}" class="text-decoration-none">
+                <div class="main-card">
+                    <div class="card-body text-center">
+                        <h4 class="fw-bold text-danger">{{ total_emergencies }}</h4>
+                        <p class="text-muted mb-0">Total urgences</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <div class="main-card">
+                <div class="card-body text-center">
+                    <h4 class="fw-bold text-info">{{ total_appointments }}</h4>
+                    <p class="text-muted mb-0">Total rendez-vous</p>
                 </div>
             </div>
         </div>
@@ -44,19 +121,22 @@
     <!-- Consultations en attente -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Consultations en attente</h3>
+            <div class="main-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Consultations en attente</h5>
+                    <a href="{% url 'doctor_my_consultations' %}?status=PENDING" class="btn btn-sm btn-outline-primary">
+                        Voir toutes <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     {% if pending_consultations %}
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Date</th>
                                     <th>Patient</th>
-                                    <th>Raison</th>
+                                    <th>Motif</th>
                                     <th>Centre</th>
                                     <th>Statut</th>
                                     <th>Actions</th>
@@ -65,12 +145,12 @@
                             <tbody>
                                 {% for consultation in pending_consultations %}
                                 <tr>
-                                    <td>{{ consultation.date|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-nowrap">{{ consultation.date|date:"d/m/Y H:i" }}</td>
                                     <td>{{ consultation.patient }}</td>
                                     <td>{{ consultation.reason|truncatechars:30 }}</td>
                                     <td>{{ consultation.centre.name }}</td>
                                     <td>
-                                        <span class="badge 
+                                        <span class="badge
                                             {% if consultation.status == 'PENDING' %}bg-warning
                                             {% elif consultation.status == 'IN_PROGRESS' %}bg-info
                                             {% endif %}">
@@ -80,8 +160,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{% url 'patient_detail' consultation.patient.id %}" class="btn btn-sm btn-outline-primary">Voir Détail</a>
-                                        <a href="{% url 'consultation_edit' consultation.id %}" class="btn btn-sm btn-outline-secondary">Éditer</a>
+                                        <a href="{% url 'consultation_detail' consultation.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -89,45 +168,48 @@
                         </table>
                     </div>
                     {% else %}
-                    <p>Aucune consultation en attente</p>
+                    <p class="text-muted text-center">Aucune consultation en attente</p>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Consultations terminées -->
+    <!-- Hospitalisations actives -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Consultations terminées</h3>
+            <div class="main-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-bed me-2"></i>Hospitalisations actives</h5>
+                    <a href="{% url 'doctor_my_hospitalisations' %}?status=active" class="btn btn-sm btn-outline-warning">
+                        Voir toutes <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
                 <div class="card-body">
-                    {% if completed_consultations %}
+                    {% if active_hospitalisations %}
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
                                     <th>Patient</th>
-                                    <th>Raison</th>
-                                    <th>Centre</th>
-                                    <th>Diagnostic</th>
+                                    <th>Service</th>
+                                    <th>Chambre/Lit</th>
+                                    <th>Admission</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for consultation in completed_consultations %}
+                                {% for hosp in active_hospitalisations %}
                                 <tr>
-                                    <td>{{ consultation.date|date:"d/m/Y H:i" }}</td>
-                                    <td>{{ consultation.patient }}</td>
-                                    <td>{{ consultation.reason|truncatechars:30 }}</td>
-                                    <td>{{ consultation.centre.name }}</td>
-                                    <td>{{ consultation.diagnosis|truncatechars:40 }}</td>
+                                    <td>{{ hosp.patient }}</td>
+                                    <td>{{ hosp.service }}</td>
+                                    <td>{{ hosp.room|default:"-" }}/{{ hosp.bed|default:"-" }}</td>
+                                    <td class="text-nowrap">{{ hosp.admission_date|date:"d/m/Y" }}</td>
                                     <td>
-                                        <a href="{% url 'patient_detail' consultation.patient.id %}" class="btn btn-sm btn-outline-primary">Voir Détail</a>
-                                        <a href="{% url 'generate_document' consultation.patient.id 'prescription' %}" class="btn btn-sm btn-outline-success">Ordonnance</a>
+                                        <a href="{% url 'hospitalisation_detail' hosp.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                        <button class="btn btn-sm btn-outline-success" hx-get="{% url 'hospitalisation_discharge' hosp.id %}" hx-target="#modal-container" data-bs-toggle="modal" data-bs-target="#modal-container">
+                                            Sortir
+                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -135,7 +217,63 @@
                         </table>
                     </div>
                     {% else %}
-                    <p>Aucune consultation terminée</p>
+                    <p class="text-muted text-center">Aucune hospitalisation active</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Urgences non orientées -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-ambulance me-2"></i>Urgences à orienter</h5>
+                    <a href="{% url 'doctor_my_emergencies' %}" class="btn btn-sm btn-outline-danger">
+                        Voir toutes <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if pending_emergencies %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Niveau</th>
+                                    <th>Motif</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emergency in pending_emergencies %}
+                                <tr>
+                                    <td class="text-nowrap">{{ emergency.admission_time|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ emergency.patient }}</td>
+                                    <td>
+                                        {% if emergency.triage_level == 'LOW' %}
+                                        <span class="badge bg-success">Léger</span>
+                                        {% elif emergency.triage_level == 'MEDIUM' %}
+                                        <span class="badge bg-warning">Moyen</span>
+                                        {% elif emergency.triage_level == 'HIGH' %}
+                                        <span class="badge" style="background-color: #fd7e14;">Grave</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Vital</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ emergency.reason|truncatechars:40 }}</td>
+                                    <td>
+                                        <a href="{% url 'emergency_detail' emergency.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">Aucune urgence à orienter</p>
                     {% endif %}
                 </div>
             </div>
@@ -145,19 +283,20 @@
     <!-- Rendez-vous à venir -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
+            <div class="main-card">
                 <div class="card-header">
-                    <h3>Rendez-vous à venir</h3>
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Mes prochains rendez-vous</h5>
                 </div>
                 <div class="card-body">
                     {% if upcoming_appointments %}
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Date</th>
                                     <th>Patient</th>
-                                    <th>Raison</th>
+                                    <th>Motif</th>
+                                    <th>Durée</th>
                                     <th>Statut</th>
                                     <th>Actions</th>
                                 </tr>
@@ -165,13 +304,14 @@
                             <tbody>
                                 {% for appointment in upcoming_appointments %}
                                 <tr>
-                                    <td>{{ appointment.date|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-nowrap">{{ appointment.date|date:"d/m/Y H:i" }}</td>
                                     <td>{{ appointment.patient }}</td>
-                                    <td>{{ appointment.reason|truncatechars:40 }}</td>
+                                    <td>{{ appointment.reason|truncatechars:40|default:"-" }}</td>
+                                    <td>{{ appointment.duration }} min</td>
                                     <td>
-                                        <span class="badge 
+                                        <span class="badge
                                             {% if appointment.status == 'SCHEDULED' %}bg-primary
-                                            {% elif appointment.status == 'CONFIRMED' %}bg-info
+                                            {% elif appointment.status == 'CONFIRMED' %}bg-success
                                             {% endif %}">
                                             {% if appointment.status == 'SCHEDULED' %}Planifié
                                             {% elif appointment.status == 'CONFIRMED' %}Confirmé
@@ -179,8 +319,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{% url 'appointment_edit' appointment.id %}" class="btn btn-sm btn-outline-primary">Éditer</a>
-                                        <a href="{% url 'patient_detail' appointment.patient.id %}" class="btn btn-sm btn-outline-secondary">Voir Patient</a>
+                                        <a href="{% url 'patient_detail' appointment.patient.id %}" class="btn btn-sm btn-outline-primary">Voir Patient</a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -188,7 +327,7 @@
                         </table>
                     </div>
                     {% else %}
-                    <p>Aucun rendez-vous à venir</p>
+                    <p class="text-muted text-center">Aucun rendez-vous à venir</p>
                     {% endif %}
                 </div>
             </div>

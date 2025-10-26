@@ -1,305 +1,763 @@
 {% extends 'hospital/base.html' %}
+{% load static %}
 
-{% block title %}Statistiques - {{ block.super }}{% endblock %}
+{% block title %}Statistiques Hospitalières - {{ block.super }}{% endblock %}
 
-{% block page_title %}Statistiques du système{% endblock %}
+{% block page_title %}Statistiques & Analyses{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
+    <!-- En-tête époustouflant -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="welcome-card">
-                <div class="welcome-icon">
-                    <i class="fas fa-chart-line"></i>
+            <div class="welcome-card bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="display-4 fw-bold mb-3">
+                            <i class="fas fa-chart-line me-3"></i>Centre de Statistiques
+                        </h1>
+                        <p class="lead mb-0">Vue d'ensemble complète de l'activité hospitalière - Analyse en temps réel</p>
+                        <small class="d-block mt-2 opacity-75">
+                            <i class="fas fa-clock me-2"></i>Dernière mise à jour : {% now "d/m/Y à H:i" %}
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="display-1 opacity-50">
+                            <i class="fas fa-hospital"></i>
+                        </div>
+                    </div>
                 </div>
-                <h2 class="display-5 fw-bold">Statistiques Hospitalières</h2>
-                <p class="lead">Vue d'ensemble des données et activités du système</p>
             </div>
         </div>
     </div>
 
-    <!-- Cartes de statistiques générales -->
+    <!-- KPIs Principaux - Section Impressionnante -->
     <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="stat-card">
+        <div class="col-12 mb-3">
+            <h3 class="fw-bold text-primary">
+                <i class="fas fa-tachometer-alt me-2"></i>Indicateurs Clés de Performance (KPI)
+            </h3>
+            <hr class="border-primary" style="border-width: 2px;">
+        </div>
+        
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card hover-lift" style="border-left: 5px solid #3498db;">
                 <div class="card-body text-center">
-                    <div class="stat-icon bg-primary-gradient mx-auto">
+                    <div class="stat-icon bg-primary-gradient mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
                         <i class="fas fa-users"></i>
                     </div>
-                    <h3 class="fw-bold">{{ total_patients }}</h3>
-                    <p class="text-muted mb-0">Patients</p>
+                    <h2 class="fw-bold mb-1" style="font-size: 2.5rem;">{{ total_patients }}</h2>
+                    <p class="text-muted mb-0">Patients Totaux</p>
+                    <small class="text-success"><i class="fas fa-arrow-up me-1"></i>Population suivie</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="stat-card">
+        
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card hover-lift" style="border-left: 5px solid #2ecc71;">
                 <div class="card-body text-center">
-                    <div class="stat-icon bg-success-gradient mx-auto">
+                    <div class="stat-icon bg-success-gradient mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
                         <i class="fas fa-stethoscope"></i>
                     </div>
-                    <h3 class="fw-bold">{{ total_consultations }}</h3>
+                    <h2 class="fw-bold mb-1" style="font-size: 2.5rem;">{{ total_consultations }}</h2>
                     <p class="text-muted mb-0">Consultations</p>
+                    <small class="text-primary"><i class="fas fa-chart-line me-1"></i>Toutes activités</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="stat-card">
+        
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card hover-lift" style="border-left: 5px solid #f39c12;">
                 <div class="card-body text-center">
-                    <div class="stat-icon bg-warning-gradient mx-auto">
+                    <div class="stat-icon bg-warning-gradient mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
                         <i class="fas fa-procedures"></i>
                     </div>
-                    <h3 class="fw-bold">{{ total_hospitalisations }}</h3>
+                    <h2 class="fw-bold mb-1" style="font-size: 2.5rem;">{{ total_hospitalisations }}</h2>
                     <p class="text-muted mb-0">Hospitalisations</p>
+                    <small class="text-warning"><i class="fas fa-bed me-1"></i>Dont {{ active_hospitalisations }} actives</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="stat-card">
+        
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card hover-lift" style="border-left: 5px solid #e74c3c;">
                 <div class="card-body text-center">
-                    <div class="stat-icon bg-danger-gradient mx-auto">
+                    <div class="stat-icon bg-danger-gradient mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
                         <i class="fas fa-ambulance"></i>
                     </div>
-                    <h3 class="fw-bold">{{ total_emergencies }}</h3>
+                    <h2 class="fw-bold mb-1" style="font-size: 2.5rem;">{{ total_emergencies }}</h2>
                     <p class="text-muted mb-0">Urgences</p>
+                    <small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Interventions d'urgence</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="stat-card">
+        
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card hover-lift" style="border-left: 5px solid #9b59b6;">
                 <div class="card-body text-center">
-                    <div class="stat-icon bg-info-gradient mx-auto">
+                    <div class="stat-icon bg-info-gradient mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
                         <i class="fas fa-calendar-check"></i>
                     </div>
-                    <h3 class="fw-bold">{{ total_appointments }}</h3>
+                    <h2 class="fw-bold mb-1" style="font-size: 2.5rem;">{{ total_appointments }}</h2>
                     <p class="text-muted mb-0">Rendez-vous</p>
+                    <small class="text-info"><i class="fas fa-clock me-1"></i>Planifiés</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="stat-card">
+        
+        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card hover-lift" style="border-left: 5px solid #1abc9c;">
                 <div class="card-body text-center">
-                    <div class="stat-icon bg-secondary-gradient mx-auto">
-                        <i class="fas fa-bed"></i>
+                    <div class="stat-icon mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem; background: linear-gradient(135deg, #1abc9c, #16a085); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-building"></i>
                     </div>
-                    <h3 class="fw-bold">{{ active_hospitalisations }}</h3>
-                    <p class="text-muted mb-0">Actives</p>
+                    <h2 class="fw-bold mb-1" style="font-size: 2.5rem;">{{ total_centres }}</h2>
+                    <p class="text-muted mb-0">Centres Médicaux</p>
+                    <small class="text-success"><i class="fas fa-map-marker-alt me-1"></i>Réseau médical</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Section des détails -->
-    <div class="row">
-        <!-- Consultations par statut -->
-        <div class="col-md-4">
-            <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Consultations par statut</h5>
-                </div>
+    <!-- Statistiques Personnel Médical -->
+    <div class="row mb-4">
+        <div class="col-12 mb-3">
+            <h3 class="fw-bold text-success">
+                <i class="fas fa-user-md me-2"></i>Ressources Humaines Médicales
+            </h3>
+            <hr class="border-success" style="border-width: 2px;">
+        </div>
+        
+        <div class="col-md-3">
+            <div class="main-card border-start border-4 border-primary">
                 <div class="card-body">
-                    <div class="d-flex flex-wrap">
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-warning">En attente: {{ consultations_by_status.PENDING|default:0 }}</span>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold text-primary mb-0">{{ total_users }}</h4>
+                            <p class="text-muted mb-0">Personnel Total</p>
                         </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-info">En cours: {{ consultations_by_status.IN_PROGRESS|default:0 }}</span>
-                        </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-success">Terminées: {{ consultations_by_status.COMPLETED|default:0 }}</span>
-                        </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-secondary">Annulées: {{ consultations_by_status.CANCELLED|default:0 }}</span>
+                        <div class="stat-icon bg-primary-gradient" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            <i class="fas fa-users"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Répartition par genre -->
-        <div class="col-md-4">
-            <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Patients par genre</h5>
-                </div>
+        <div class="col-md-3">
+            <div class="main-card border-start border-4 border-info">
                 <div class="card-body">
-                    <div class="d-flex flex-wrap">
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-primary">Hommes: {{ patients_by_gender.M|default:0 }}</span>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold text-info mb-0">{{ total_doctors|default:0 }}</h4>
+                            <p class="text-muted mb-0">Médecins</p>
                         </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-danger">Femmes: {{ patients_by_gender.F|default:0 }}</span>
+                        <div class="stat-icon bg-info-gradient" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            <i class="fas fa-user-md"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Répartition par centre -->
-        <div class="col-md-4">
-            <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Consultations par centre</h5>
-                </div>
+        <div class="col-md-3">
+            <div class="main-card border-start border-4 border-success">
                 <div class="card-body">
-                    {% if consultations_by_centre %}
-                        <ul class="list-group list-group-flush">
-                            {% for item in consultations_by_centre %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ item.centre }}
-                                <span class="badge bg-primary rounded-pill">{{ item.count }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted mb-0">Aucune donnée disponible</p>
-                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold text-success mb-0">{{ total_nurses|default:0 }}</h4>
+                            <p class="text-muted mb-0">Infirmiers</p>
+                        </div>
+                        <div class="stat-icon bg-success-gradient" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            <i class="fas fa-user-nurse"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="main-card border-start border-4 border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold text-warning mb-0">{{ total_secretaries|default:0 }}</h4>
+                            <p class="text-muted mb-0">Secrétaires</p>
+                        </div>
+                        <div class="stat-icon bg-warning-gradient" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Section des tendances et détails -->
-    <div class="row">
-        <!-- Consultations sur 6 derniers mois -->
-        <div class="col-md-6">
+    <!-- Analyses Détaillées - 2 colonnes -->
+    <div class="row mb-4">
+        <!-- Colonne Gauche : Consultations et Activités -->
+        <div class="col-lg-6">
+            <!-- Consultations par Statut -->
             <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Évolution consultations (6 derniers mois)</h5>
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Consultations par Statut</h5>
                 </div>
                 <div class="card-body">
-                    {% if consultations_last_6_months %}
-                        <ul class="list-group list-group-flush">
-                            {% for item in consultations_last_6_months %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ item.month }}
-                                <span class="badge bg-success rounded-pill">{{ item.count }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted mb-0">Aucune donnée disponible</p>
-                    {% endif %}
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="p-3 bg-warning bg-opacity-10 rounded border border-warning">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h3 class="fw-bold mb-0">{{ consultations_by_status.PENDING|default:0 }}</h3>
+                                        <small class="text-muted">En attente</small>
+                                    </div>
+                                    <i class="fas fa-clock fa-2x text-warning"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-info bg-opacity-10 rounded border border-info">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h3 class="fw-bold mb-0">{{ consultations_by_status.IN_PROGRESS|default:0 }}</h3>
+                                        <small class="text-muted">En cours</small>
+                                    </div>
+                                    <i class="fas fa-spinner fa-2x text-info"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-success bg-opacity-10 rounded border border-success">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h3 class="fw-bold mb-0">{{ consultations_by_status.COMPLETED|default:0 }}</h3>
+                                        <small class="text-muted">Terminées</small>
+                                    </div>
+                                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded border border-secondary">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h3 class="fw-bold mb-0">{{ consultations_by_status.CANCELLED|default:0 }}</h3>
+                                        <small class="text-muted">Annulées</small>
+                                    </div>
+                                    <i class="fas fa-times-circle fa-2x text-secondary"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Graphique circulaire -->
+                    <div class="mt-4">
+                        <canvas id="consultationsChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Urgences par Niveau de Triage -->
+            <div class="main-card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-ambulance me-2"></i>Urgences par Niveau de Gravité</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold"><i class="fas fa-circle text-success me-2"></i>Léger (Vert)</span>
+                            <span class="badge bg-success">{{ emergencies_by_level.LOW|default:0 }}</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {% widthratio emergencies_by_level.LOW|default:0 total_emergencies 100 %}%">
+                                {% widthratio emergencies_by_level.LOW|default:0 total_emergencies 100 %}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold"><i class="fas fa-circle text-warning me-2"></i>Moyen (Jaune)</span>
+                            <span class="badge bg-warning">{{ emergencies_by_level.MEDIUM|default:0 }}</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-warning" role="progressbar" 
+                                 style="width: {% widthratio emergencies_by_level.MEDIUM|default:0 total_emergencies 100 %}%">
+                                {% widthratio emergencies_by_level.MEDIUM|default:0 total_emergencies 100 %}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold"><i class="fas fa-circle me-2" style="color: #fd7e14;"></i>Grave (Orange)</span>
+                            <span class="badge" style="background-color: #fd7e14;">{{ emergencies_by_level.HIGH|default:0 }}</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar" style="background-color: #fd7e14; width: {% widthratio emergencies_by_level.HIGH|default:0 total_emergencies 100 %}%;">
+                                {% widthratio emergencies_by_level.HIGH|default:0 total_emergencies 100 %}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold"><i class="fas fa-circle text-danger me-2"></i>Vital (Rouge)</span>
+                            <span class="badge bg-danger">{{ emergencies_by_level.CRITICAL|default:0 }}</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                 style="width: {% widthratio emergencies_by_level.CRITICAL|default:0 total_emergencies 100 %}%">
+                                {% widthratio emergencies_by_level.CRITICAL|default:0 total_emergencies 100 %}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Graphique -->
+                    <div class="mt-4">
+                        <canvas id="emergenciesChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Répartition par Genre -->
+            <div class="main-card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                    <h5 class="mb-0"><i class="fas fa-venus-mars me-2"></i>Répartition des Patients par Genre</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="p-4 bg-primary bg-opacity-10 rounded">
+                                <i class="fas fa-mars fa-3x text-primary mb-3"></i>
+                                <h2 class="fw-bold">{{ patients_by_gender.M|default:0 }}</h2>
+                                <p class="text-muted mb-0">Hommes</p>
+                                <small class="text-primary">{% widthratio patients_by_gender.M|default:0 total_patients 100 %}%</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-4 bg-danger bg-opacity-10 rounded">
+                                <i class="fas fa-venus fa-3x text-danger mb-3"></i>
+                                <h2 class="fw-bold">{{ patients_by_gender.F|default:0 }}</h2>
+                                <p class="text-muted mb-0">Femmes</p>
+                                <small class="text-danger">{% widthratio patients_by_gender.F|default:0 total_patients 100 %}%</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Hospitalisations par service -->
-        <div class="col-md-6">
+
+        <!-- Colonne Droite : Tops et Tendances -->
+        <div class="col-lg-6">
+            <!-- Top 10 Médecins -->
             <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Hospitalisations par service</h5>
+                <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top 10 Médecins - Consultations</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_doctors %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Médecin</th>
+                                    <th class="text-end">Consultations</th>
+                                    <th style="width: 100px;">Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doctor in top_doctors %}
+                                <tr>
+                                    <td class="fw-bold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-2" style="width: 35px; height: 35px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                                {{ doctor.full_name|first|upper }}
+                                            </div>
+                                            {{ doctor.full_name }}
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-bold text-primary">{{ doctor.count }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-primary" role="progressbar" 
+                                                 style="width: {% widthratio doctor.count top_doctors.0.count 100 %}%">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">Aucune donnée disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Top 10 Services - Hospitalisations -->
+            <div class="main-card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+                    <h5 class="mb-0"><i class="fas fa-hospital-alt me-2"></i>Top 10 Services - Hospitalisations</h5>
                 </div>
                 <div class="card-body">
                     {% if hospitalisations_by_service %}
-                        <ul class="list-group list-group-flush">
-                            {% for item in hospitalisations_by_service %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ item.service }}
-                                <span class="badge bg-warning rounded-pill">{{ item.count }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Service</th>
+                                    <th class="text-end">Hospitalisations</th>
+                                    <th style="width: 100px;">Taux</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for service in hospitalisations_by_service|slice:":10" %}
+                                <tr>
+                                    <td class="fw-bold">{{ forloop.counter }}</td>
+                                    <td>{{ service.service }}</td>
+                                    <td class="text-end fw-bold text-warning">{{ service.count }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-warning" role="progressbar" 
+                                                 style="width: {% widthratio service.count hospitalisations_by_service.0.count 100 %}%">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
-                        <p class="text-muted mb-0">Aucune donnée disponible</p>
+                    <p class="text-muted text-center">Aucune donnée disponible</p>
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- Taux d'occupation Centres -->
+            <div class="main-card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Consultations par Centre</h5>
+                </div>
+                <div class="card-body">
+                    {% if consultations_by_centre %}
+                    {% for centre_data in consultations_by_centre|slice:":5" %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold">{{ centre_data.centre }}</span>
+                            <span class="badge bg-primary">{{ centre_data.count }}</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="background: linear-gradient(90deg, #667eea, #764ba2); width: {% widthratio centre_data.count consultations_by_centre.0.count 100 %}%">
+                                {% widthratio centre_data.count total_consultations 100 %}% du total
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted text-center">Aucune donnée disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne Droite : Tendances Temporelles -->
+        <div class="col-lg-6">
+            <!-- Évolution Consultations 6 Derniers Mois -->
+            <div class="main-card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Évolution - 6 Derniers Mois</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyChart" height="250"></canvas>
+                    
+                    <!-- Tableau des données -->
+                    <div class="table-responsive mt-4">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Mois</th>
+                                    <th class="text-end">Consultations</th>
+                                    <th class="text-end">Évolution</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for month in consultations_last_6_months %}
+                                <tr>
+                                    <td class="fw-semibold">{{ month.month }}</td>
+                                    <td class="text-end">{{ month.count }}</td>
+                                    <td class="text-end">
+                                        {% if forloop.counter > 1 %}
+                                            {% with prev=consultations_last_6_months|slice:forloop.counter0|last %}
+                                                {% if month.count > prev.count %}
+                                                    <span class="text-success"><i class="fas fa-arrow-up"></i></span>
+                                                {% elif month.count < prev.count %}
+                                                    <span class="text-danger"><i class="fas fa-arrow-down"></i></span>
+                                                {% else %}
+                                                    <span class="text-secondary"><i class="fas fa-minus"></i></span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orientations des Urgences -->
+            <div class="main-card mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-directions me-2"></i>Orientation des Urgences</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-4">
+                            <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                                <h3 class="fw-bold text-success mb-1">{{ emergency_orientations.DISCHARGED|default:0 }}</h3>
+                                <small class="text-muted">Sorties</small>
+                                <div class="mt-2">
+                                    <i class="fas fa-home fa-2x text-success"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center p-3 bg-info bg-opacity-10 rounded">
+                                <h3 class="fw-bold text-info mb-1">{{ emergency_orientations.HOSPITALISED|default:0 }}</h3>
+                                <small class="text-muted">Hospitalisés</small>
+                                <div class="mt-2">
+                                    <i class="fas fa-bed fa-2x text-info"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center p-3 bg-secondary bg-opacity-10 rounded">
+                                <h3 class="fw-bold text-secondary mb-1">{{ emergency_orientations.TRANSFERRED|default:0 }}</h3>
+                                <small class="text-muted">Transférés</small>
+                                <div class="mt-2">
+                                    <i class="fas fa-exchange-alt fa-2x text-secondary"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rendez-vous par Statut -->
+            <div class="main-card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Rendez-vous par Statut</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for status, count in appointments_by_status.items %}
+                        <div class="col-6">
+                            <div class="p-3 text-center rounded border">
+                                <h4 class="fw-bold mb-1">{{ count }}</h4>
+                                <small class="text-muted">
+                                    {% if status == 'SCHEDULED' %}Planifiés
+                                    {% elif status == 'CONFIRMED' %}Confirmés
+                                    {% elif status == 'COMPLETED' %}Terminés
+                                    {% else %}Annulés{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Section des urgences -->
-    <div class="row">
-        <!-- Urgences par niveau -->
+    <!-- Section Insights & Recommandations -->
+    <div class="row mb-4">
+        <div class="col-12 mb-3">
+            <h3 class="fw-bold text-info">
+                <i class="fas fa-lightbulb me-2"></i>Insights & Recommandations
+            </h3>
+            <hr class="border-info" style="border-width: 2px;">
+        </div>
+        
         <div class="col-md-4">
-            <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Urgences par niveau</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap">
-                        <div class="me-4 mb-3">
-                            <span class="badge" style="background-color: #28a745;">Léger: {{ emergencies_by_level.LOW|default:0 }}</span>
-                        </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge" style="background-color: #ffc107;">Moyen: {{ emergencies_by_level.MEDIUM|default:0 }}</span>
-                        </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge" style="background-color: #fd7e14;">Grave: {{ emergencies_by_level.HIGH|default:0 }}</span>
-                        </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge" style="background-color: #dc3545;">Vital: {{ emergencies_by_level.CRITICAL|default:0 }}</span>
-                        </div>
+            <div class="alert border-start border-5 border-success" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(26, 188, 156, 0.1));">
+                <h6 class="fw-bold text-success"><i class="fas fa-chart-line me-2"></i>Taux de Complétion</h6>
+                <p class="mb-2">{{ consultations_by_status.COMPLETED|default:0 }} consultations terminées sur {{ total_consultations }}</p>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-success" style="width: {% widthratio consultations_by_status.COMPLETED|default:0 total_consultations 100 %}%">
+                        {% widthratio consultations_by_status.COMPLETED|default:0 total_consultations 100 %}%
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Orientation des urgences -->
         <div class="col-md-4">
-            <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Orientation des urgences</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap">
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-success">Sortie: {{ emergency_orientations.DISCHARGED|default:0 }}</span>
-                        </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-warning">Hospitalisation: {{ emergency_orientations.HOSPITALISED|default:0 }}</span>
-                        </div>
-                        <div class="me-4 mb-3">
-                            <span class="badge bg-info">Transfert: {{ emergency_orientations.TRANSFERRED|default:0 }}</span>
-                        </div>
+            <div class="alert border-start border-5 border-warning" style="background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.1));">
+                <h6 class="fw-bold text-warning"><i class="fas fa-bed me-2"></i>Hospitalisations Actives</h6>
+                <p class="mb-2">{{ active_hospitalisations }} patients actuellement hospitalisés</p>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-warning" style="width: {% widthratio active_hospitalisations total_hospitalisations 100 %}%">
+                        {% widthratio active_hospitalisations total_hospitalisations 100 %}%
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Consultations par médecin (Admin seulement) -->
-        {% if user_role == 'ADMIN' %}
         <div class="col-md-4">
-            <div class="main-card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Consultations par médecin</h5>
-                </div>
-                <div class="card-body">
-                    {% if consultations_by_doctor %}
-                        <ul class="list-group list-group-flush">
-                            {% for item in consultations_by_doctor %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ item.doctor }}
-                                <span class="badge bg-info rounded-pill">{{ item.count }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted mb-0">Aucune donnée disponible</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Informations spécifiques selon le rôle -->
-    {% if user_role != 'ADMIN' %}
-    <div class="row">
-        <div class="col-12">
-            <div class="main-card">
-                <div class="card-body text-center">
-                    <i class="fas fa-user-md fa-3x text-primary mb-3"></i>
-                    <h5 class="card-title">Statistiques personnelles</h5>
-                    <p class="card-text text-muted">
-                        Les statistiques affichées sont limitées à vos activités et responsabilités.
-                        {% if user_role == 'DOCTOR' %}
-                        Vous voyez uniquement les données liées à vos consultations, hospitalisations et interventions.
-                        {% endif %}
-                    </p>
-                </div>
+            <div class="alert border-start border-5 border-danger" style="background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1));">
+                <h6 class="fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Urgences Critiques</h6>
+                <p class="mb-2">{{ emergencies_by_level.CRITICAL|default:0 }} urgences vitales traitées</p>
+                {% if emergencies_by_level.CRITICAL > 0 %}
+                <small class="text-danger"><i class="fas fa-info-circle me-1"></i>Surveillance renforcée requise</small>
+                {% else %}
+                <small class="text-success"><i class="fas fa-check-circle me-1"></i>Situation sous contrôle</small>
+                {% endif %}
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Graphique des consultations par statut
+    const consultationsCtx = document.getElementById('consultationsChart');
+    if (consultationsCtx) {
+        new Chart(consultationsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['En attente', 'En cours', 'Terminées', 'Annulées'],
+                datasets: [{
+                    data: [
+                        {{ consultations_by_status.PENDING|default:0 }},
+                        {{ consultations_by_status.IN_PROGRESS|default:0 }},
+                        {{ consultations_by_status.COMPLETED|default:0 }},
+                        {{ consultations_by_status.CANCELLED|default:0 }}
+                    ],
+                    backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6c757d'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {position: 'bottom'},
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.parsed || 0;
+                                let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                let percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Graphique des urgences par niveau
+    const emergenciesCtx = document.getElementById('emergenciesChart');
+    if (emergenciesCtx) {
+        new Chart(emergenciesCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Léger', 'Moyen', 'Grave', 'Vital'],
+                datasets: [{
+                    data: [
+                        {{ emergencies_by_level.LOW|default:0 }},
+                        {{ emergencies_by_level.MEDIUM|default:0 }},
+                        {{ emergencies_by_level.HIGH|default:0 }},
+                        {{ emergencies_by_level.CRITICAL|default:0 }}
+                    ],
+                    backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {position: 'bottom'}
+                }
+            }
+        });
+    }
+    
+    // Graphique évolution mensuelle
+    const monthlyCtx = document.getElementById('monthlyChart');
+    if (monthlyCtx) {
+        new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: [
+                    {% for month in consultations_last_6_months %}'{{ month.month }}'{% if not forloop.last %}, {% endif %}{% endfor %}
+                ],
+                datasets: [{
+                    label: 'Consultations',
+                    data: [
+                        {% for month in consultations_last_6_months %}{{ month.count }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    ],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: true, position: 'top'},
+                    tooltip: {mode: 'index', intersect: false}
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {stepSize: 1}
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.stat-card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+</style>
 {% endblock %}
