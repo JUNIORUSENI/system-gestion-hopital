@@ -1,0 +1,280 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Hospitalisations - {{ block.super }}{% endblock %}
+
+{% block page_title %}Gestion des Hospitalisations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="section-title mb-3">Toutes les Hospitalisations</h2>
+            <div class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <div class="search-container position-relative">
+                            <input type="text" class="form-control ps-5" placeholder="Rechercher une hospitalisation..." id="searchInput" style="padding-left: 2.5rem;">
+                            <i class="fas fa-search search-icon position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); z-index: 5; color: #6c757d;"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary w-100" hx-get="{% url 'hospitalisation_create' %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-plus me-2"></i>Nouvelle Hospitalisation
+                        </button>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <!-- Filtre par service -->
+                        <select class="form-select" id="serviceFilter">
+                            <option value="">Tous les services</option>
+                            {% regroup hospitalisations by service as service_groups %}
+                            {% for service_group in service_groups %}
+                                {% if service_group.grouper %}
+                                    <option value="{{ service_group.grouper }}">{{ service_group.grouper }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <!-- Filtre par médecin -->
+                        <select class="form-select" id="doctorFilter">
+                            <option value="">Tous les médecins</option>
+                            {% regroup hospitalisations by doctor as doctor_groups %}
+                            {% for doctor_group in doctor_groups %}
+                                {% if doctor_group.grouper %}
+                                    <option value="{{ doctor_group.grouper.id }}">{{ doctor_group.grouper.get_full_name|default:doctor_group.grouper.username }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <!-- Filtre par statut -->
+                        <select class="form-select" id="statusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="en_cours">En cours</option>
+                            <option value="termine">Terminé</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <!-- Filtre par centre -->
+                        <select class="form-select" id="centreFilter">
+                            <option value="">Tous les centres</option>
+                            {% regroup hospitalisations by centre as centre_groups %}
+                            {% for centre_group in centre_groups %}
+                                {% if centre_group.grouper %}
+                                    <option value="{{ centre_group.grouper.id }}">{{ centre_group.grouper.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped" id="hospitalisationsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 180px;">Patient</th>
+                                    <th style="min-width: 120px;">Date d'admission</th>
+                                    <th style="min-width: 100px;">Centre</th>
+                                    <th style="min-width: 100px;">Service</th>
+                                    <th style="min-width: 100px;">Chambre/Lit</th>
+                                    <th style="min-width: 120px;">Médecin</th>
+                                    <th style="min-width: 80px;">Statut</th>
+                                    <th style="min-width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hospitalisationsTableBody">
+                                {% for hosp in hospitalisations %}
+                                <tr data-service="{{ hosp.service }}" data-doctor="{{ hosp.doctor.id|default:'' }}" data-status="{% if hosp.discharge_date %}termine{% else %}en_cours{% endif %}" data-centre="{{ hosp.centre.id }}">
+                                    <td class="fw-bold" style="font-size: 0.9rem;">
+                                        <div class="d-flex flex-column">
+                                            <div class="text-truncate" style="max-width: 180px;">
+                                                <span class="text-uppercase">{{ hosp.patient.last_name }}</span>
+                                                {% if hosp.patient.postname %} <span class="text-uppercase">{{ hosp.patient.postname }}</span>{% endif %}
+                                                {{ hosp.patient.first_name }}
+                                            </div>
+                                            <small class="text-muted" style="font-size: 0.8rem;">#{{ hosp.patient.id }}</small>
+                                            {% if hosp.discharge_date %}
+                                                <small class="text-danger" style="font-size: 0.75rem;">Sortie: {{ hosp.discharge_date|localtime|date:"d/m/Y H:i" }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap">{{ hosp.admission_date|localtime|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-truncate" style="max-width: 100px;">{{ hosp.centre.name }}</td>
+                                    <td class="text-truncate" style="max-width: 80px;">{{ hosp.service }}</td>
+                                    <td class="text-nowrap">
+                                        {% if hosp.room %}{{ hosp.room }}{% else %}-{% endif %}
+                                        {% if hosp.bed %}/ {{ hosp.bed }}{% endif %}
+                                    </td>
+                                    <td class="text-truncate" style="max-width: 120px;">{{ hosp.doctor.get_full_name|default:hosp.doctor.username }}</td>
+                                    <td>
+                                        {% if hosp.discharge_date %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Terminé
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-hourglass-half me-1"></i>En cours
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if not hosp.discharge_date %}
+                                            <a href="{% url 'hospitalisation_discharge' hosp.id %}" class="btn btn-sm btn-success" title="Clôturer l'hospitalisation">
+                                                <i class="fas fa-check"></i> Sortir
+                                            </a>
+                                            {% else %}
+                                            <span class="btn btn-sm btn-success disabled" title="Hospitalisation terminée">
+                                                <i class="fas fa-check"></i> Sorti
+                                            </span>
+                                            {% endif %}
+                                            <a href="{% url 'patient_detail' hosp.patient.id %}" class="btn btn-sm btn-primary" title="Voir la fiche patient">
+                                                <i class="fas fa-user-injured"></i>
+                                            </a>
+                                            <a href="{% url 'hospitalisation_detail' hosp.id %}" class="btn btn-sm btn-primary" title="Voir le détail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-secondary" hx-get="{% url 'hospitalisation_edit' hosp.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" hx-get="{% url 'hospitalisation_delete' hosp.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% if hosp.discharge_date %}
+                                            <a href="{% url 'print_document' hosp.patient.id 'discharge_summary' %}" class="btn btn-sm btn-info" title="Imprimer le résumé de sortie">
+                                                <i class="fas fa-print"></i>
+                                            </a>
+                                            {% else %}
+                                            <a href="{% url 'generate_document' hosp.patient.id 'medical_report' %}" class="btn btn-sm btn-info" title="Générer un rapport médical">
+                                                <i class="fas fa-file-medical"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-procedures fa-3x mb-3"></i>
+                                        <h5>Aucune hospitalisation trouvée</h5>
+                                        <p>Commencez par planifier votre première hospitalisation</p>
+                                        <a href="{% url 'hospitalisation_create' %}" class="btn btn-primary">
+                                            <i class="fas fa-plus me-2"></i>Nouvelle Hospitalisation
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fonction de filtrage des hospitalisations
+    function filterHospitalisations() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const serviceValue = document.getElementById('serviceFilter').value;
+        const doctorValue = document.getElementById('doctorFilter').value;
+        const statusValue = document.getElementById('statusFilter').value;
+        const centreValue = document.getElementById('centreFilter').value;
+        
+        const tableRows = document.querySelectorAll('#hospitalisationsTableBody tr');
+        
+        tableRows.forEach(function(row) {
+            const rowText = row.textContent.toLowerCase();
+            const rowService = row.getAttribute('data-service');
+            const rowDoctor = row.getAttribute('data-doctor');
+            const rowStatus = row.getAttribute('data-status');
+            const rowCentre = row.getAttribute('data-centre');
+            
+            let showRow = true;
+            
+            // Filtrer par recherche textuelle (recherche dans le nom du patient, service, médecin)
+            if (searchValue) {
+                const patientName = row.querySelector('td:first-child').textContent.toLowerCase();
+                const service = rowService ? rowService.toLowerCase() : '';
+                const doctorElement = document.querySelector(`#doctorFilter option[value="${rowDoctor}"]`);
+                const doctor = doctorElement ? doctorElement.textContent.toLowerCase() : '';
+                
+                if (!patientName.includes(searchValue) && 
+                    !service.includes(searchValue) && 
+                    !doctor.includes(searchValue)) {
+                    showRow = false;
+                }
+            }
+            
+            // Filtrer par service
+            if (serviceValue && rowService !== serviceValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par médecin
+            if (doctorValue && rowDoctor !== doctorValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par statut
+            if (statusValue && rowStatus !== statusValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par centre
+            if (centreValue && rowCentre !== centreValue) {
+                showRow = false;
+            }
+            
+            if (showRow) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Ajouter des écouteurs d'événements pour chaque filtre
+    document.getElementById('searchInput').addEventListener('input', filterHospitalisations);
+    document.getElementById('serviceFilter').addEventListener('change', filterHospitalisations);
+    document.getElementById('doctorFilter').addEventListener('change', filterHospitalisations);
+    document.getElementById('statusFilter').addEventListener('change', filterHospitalisations);
+    document.getElementById('centreFilter').addEventListener('change', filterHospitalisations);
+    
+    // Fonction pour améliorer l'affichage des dates
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ajouter un formatage des dates dans le tableau si nécessaire
+        const dateCells = document.querySelectorAll('td.text-nowrap');
+        dateCells.forEach(function(cell) {
+            const originalText = cell.textContent;
+            // Si le format est AAAA-MM-JJ, le convertir en JJ/MM/AAAA
+            if (originalText.includes('-') && originalText.length === 10) {
+                const dateParts = originalText.split('-');
+                if (dateParts.length === 3) {
+                    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                    cell.textContent = formattedDate;
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

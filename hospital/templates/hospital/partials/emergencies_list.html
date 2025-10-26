@@ -1,0 +1,52 @@
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Centre</th>
+                <th>Niveau</th>
+                <th>Médecin</th>
+                <th>Motif</th>
+                <th>Orientation</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for emergency in emergencies %}
+            <tr>
+                <td>{{ emergency.admission_time|date:"d/m/Y H:i" }}</td>
+                <td>{{ emergency.centre.name }}</td>
+                <td>
+                    {% if emergency.triage_level == 'LOW' %}
+                    <span class="badge bg-success">{{ emergency.get_triage_level_display }}</span>
+                    {% elif emergency.triage_level == 'MEDIUM' %}
+                    <span class="badge bg-warning">{{ emergency.get_triage_level_display }}</span>
+                    {% elif emergency.triage_level == 'HIGH' %}
+                    <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                    {% else %}
+                    <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ emergency.doctor.get_full_name|default:emergency.doctor.username }}</td>
+                <td>{{ emergency.reason|truncatechars:30 }}</td>
+                <td>
+                    {% if emergency.orientation %}
+                        {% if emergency.orientation == 'DISCHARGED' %}
+                        <span class="badge bg-success">Sortie</span>
+                        {% elif emergency.orientation == 'HOSPITALISED' %}
+                        <span class="badge bg-info">Hospitalisation</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Transfert</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="badge bg-light">En attente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Voir</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

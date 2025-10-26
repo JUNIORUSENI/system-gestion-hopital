@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - {{ patient.first_name }} {{ patient.last_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .hospital-info {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .patient-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .hospitalization-details {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section-header {
+            background-color: #3498db;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .discharge-summary {
+            background-color: #e8f5e8;
+            border: 1px solid #4CAF50;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .signature {
+            margin-top: 30px;
+            text-align: right;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 10mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="hospital-info">
+            <h2>MÉDICARE+</h2>
+            <p>Centre Médical</p>
+            <p>{{ doctor.profile.centres.first.name|default:"Centre non spécifié" }}</p>
+        </div>
+        <h1>{{ title }}</h1>
+    </div>
+    
+    <div class="patient-info">
+        <h3>Informations du patient</h3>
+        <p><strong>Nom:</strong> {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }}</p>
+        <p><strong>Date de naissance:</strong> {{ patient.date_of_birth|date:"d/m/Y" }}</p>
+        <p><strong>Genre:</strong> {% if patient.gender == 'M' %}Homme{% else %}Femme{% endif %}</p>
+        <p><strong>Téléphone:</strong> {{ patient.phone|default:"Non renseigné" }}</p>
+    </div>
+    
+    <div class="hospitalization-details">
+        <h3>Détails de l'hospitalisation</h3>
+        <p><strong>Service:</strong> {{ hospitalisation.service }}</p>
+        <p><strong>Chambre/Lit:</strong> {{ hospitalisation.room|default:"-" }}/{{ hospitalisation.bed|default:"-" }}</p>
+        <p><strong>Date d'admission:</strong> {{ hospitalisation.admission_date|date:"d/m/Y H:i" }}</p>
+        <p><strong>Date de sortie:</strong> {{ hospitalisation.discharge_date|date:"d/m/Y H:i" }}</p>
+        <p><strong>Médecin responsable:</strong> {{ hospitalisation.doctor.get_full_name|default:hospitalisation.doctor.username }}</p>
+        <p><strong>Motif d'admission:</strong> {{ hospitalisation.admission_reason }}</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-header">
+            <h3>Interventions effectuées</h3>
+        </div>
+        {% if hospitalisation.interventions %}
+        <pre style="white-space: pre-wrap;">{{ hospitalisation.interventions }}</pre>
+        {% else %}
+        <p>Aucune intervention spécifique enregistrée.</p>
+        {% endif %}
+    </div>
+    
+    <div class="discharge-summary">
+        <div class="section-header">
+            <h3>Compte-rendu de sortie</h3>
+        </div>
+        {% if hospitalisation.discharge_summary %}
+        <pre style="white-space: pre-wrap;">{{ hospitalisation.discharge_summary }}</pre>
+        {% else %}
+        <p>Aucun compte-rendu de sortie détaillé disponible.</p>
+        {% endif %}
+    </div>
+    
+    <div class="section">
+        <div class="section-header">
+            <h3>Prescription de sortie</h3>
+        </div>
+        {% if hospitalisation.patient.consultations.last.prescription %}
+        <pre style="white-space: pre-wrap;">{{ hospitalisation.patient.consultations.last.prescription }}</pre>
+        {% else %}
+        <p>Aucune prescription spécifique de sortie enregistrée.</p>
+        {% endif %}
+    </div>
+    
+    <div class="signature">
+        <p>_________________________</p>
+        <p><strong>{{ doctor.get_full_name|default:doctor.username }}</strong></p>
+        <p>{{ doctor.profile.role|title }}</p>
+        {% if doctor.profile.centres.first %}
+        <p>{{ doctor.profile.centres.first.name }}</p>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        <p>Ce document est émis le {% now "d/m/Y H:i" %} conformément aux normes médicales en vigueur.</p>
+        <p>Ce document certifie la fin de l'hospitalisation et contient les recommandations de suivi pour le patient.</p>
+        <p>Ce document est confidentiel et ne doit être transmis qu'aux personnes autorisées.</p>
+    </div>
+    
+    <div class="no-print" style="text-align: center; margin-top: 30px;">
+        <button onclick="window.print()" class="btn btn-primary">Imprimer ce document</button>
+        <a href="{% url 'patient_detail' patient.id %}" class="btn btn-secondary">Retour au patient</a>
+    </div>
+</body>
+</html>

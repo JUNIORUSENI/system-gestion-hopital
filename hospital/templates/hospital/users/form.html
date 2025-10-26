@@ -1,0 +1,84 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="main-card">
+    <div class="card-header">
+        <h2>{{ title }}</h2>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               value="{{ user.username|default:'' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ user.email|default:'' }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">Prénom</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" 
+                               value="{{ user.first_name|default:'' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" 
+                               value="{{ user.last_name|default:'' }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Rôle</label>
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="">Sélectionner un rôle</option>
+                            <option value="ADMIN" {% if profile and profile.role == 'ADMIN' %}selected{% endif %}>Administrateur</option>
+                            <option value="DOCTOR" {% if profile and profile.role == 'DOCTOR' %}selected{% endif %}>Médecin</option>
+                            <option value="NURSE" {% if profile and profile.role == 'NURSE' %}selected{% endif %}>Infirmier</option>
+                            <option value="SECRETARY" {% if profile and profile.role == 'SECRETARY' %}selected{% endif %}>Secrétaire</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="centres" class="form-label">Centres associés</label>
+                        <select class="form-control" id="centres" name="centres" multiple>
+                            {% for centre in centres %}
+                                <option value="{{ centre.id }}" 
+                                    {% if user_centres and centre in user_centres %}selected{% endif %}>
+                                    {{ centre.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Maintenez Ctrl pour sélectionner plusieurs centres</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'user_list' %}" class="btn btn-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

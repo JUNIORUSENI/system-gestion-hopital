@@ -1,0 +1,123 @@
+{% include 'hospital/partials/form.html' with
+    title='Confirmer la suppression'
+    icon='exclamation-triangle'
+    submit_text='Supprimer'
+    submit_icon='trash'
+    htmx=true %}
+
+{% block form_fields %}
+<div class="container-fluid p-0">
+    <!-- Avertissement -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger border-0 bg-danger text-white p-4 text-center">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h5 class="mb-3">Confirmation de suppression</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations du patient -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            <div class="patient-avatar mx-auto" style="width: 60px; height: 60px; font-size: 1.4rem;">
+                                {{ patient.first_name|first|upper }}
+                            </div>
+                        </div>
+                        <div class="col-md-10">
+                            <h6 class="fw-bold mb-1">{{ patient.first_name }} {{ patient.last_name }}</h6>
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-id-card me-1"></i>ID: #{{ patient.id }}
+                            </p>
+                            {% if patient.date_of_birth %}
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-calendar me-1"></i>Né le: {{ patient.date_of_birth|date:"d/m/Y" }}
+                            </p>
+                            {% endif %}
+                            {% if patient.phone %}
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-phone me-1"></i>{{ patient.phone }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avertissement final -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning border-0 bg-warning text-dark p-3">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                    <div>
+                        <strong>Attention - Action irréversible !</strong><br>
+                        Cette action supprimera définitivement le patient et toutes les données associées :
+                        <ul class="mb-0 mt-2">
+                            <li><i class="fas fa-stethoscope me-2"></i>Consultations</li>
+                            <li><i class="fas fa-procedures me-2"></i>Hospitalisations</li>
+                            <li><i class="fas fa-ambulance me-2"></i>Urgences</li>
+                            <li><i class="fas fa-calendar-alt me-2"></i>Rendez-vous</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation finale -->
+    <div class="row">
+        <div class="col-12">
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="confirm_delete" name="confirm_delete" required>
+                <label class="form-check-label" for="confirm_delete">
+                    Je confirme vouloir supprimer définitivement ce patient
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<style>
+.alert-danger {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    border: none !important;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #ffc107, #e0a800) !important;
+    border: none !important;
+}
+
+.patient-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+}
+
+.card.border-warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.form-check-input:checked {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+ul li {
+    margin-bottom: 0.5rem;
+}
+</style>

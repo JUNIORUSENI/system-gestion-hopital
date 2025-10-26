@@ -1,0 +1,95 @@
+<div class="modal-header" style="background: linear-gradient(135deg, #1a2a4c, #2c3e50); color: white;">
+    <h5 class="modal-title fw-bold">
+        <i class="fas fa-{{ icon|default:'edit' }} me-2"></i>{{ title|default:"Formulaire" }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form method="post"
+      class="modal-form"
+      {% if htmx %}
+      hx-post="{{ form_action_url }}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      {% endif %}>
+    {% csrf_token %}
+    
+    <div class="modal-body" style="background-color: #f8f9fa; max-height: 70vh; overflow-y: auto;">
+        {% block form_fields %}
+        <!-- Les champs du formulaire seront insérés ici -->
+        {% endblock %}
+    </div>
+    
+    <div class="modal-footer bg-light" style="border-top: 1px solid #dee2e6;">
+        <button type="button" class="btn btn-unified btn-outline-secondary px-4" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Annuler
+        </button>
+        <button type="submit" class="btn btn-unified btn-primary px-4 fw-semibold">
+            <i class="fas fa-{{ submit_icon|default:'save' }} me-2"></i>{{ submit_text|default:"Enregistrer" }}
+        </button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Amélioration des champs du formulaire
+    const form = document.querySelector('.modal-form');
+    if (form) {
+        // Ajouter les classes Bootstrap si manquantes
+        form.querySelectorAll('input, select, textarea').forEach(function(element) {
+            if (!element.classList.contains('form-control') && 
+                !element.classList.contains('form-select') && 
+                element.type !== 'hidden') {
+                
+                if (element.tagName === 'SELECT') {
+                    element.classList.add('form-select');
+                } else {
+                    element.classList.add('form-control');
+                }
+            }
+        });
+        
+        // Validation du formulaire
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validation du téléphone
+            const phoneInput = form.querySelector('input[name="phone"]');
+            if (phoneInput && phoneInput.value) {
+                const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+                if (!phoneRegex.test(phoneInput.value)) {
+                    phoneInput.classList.add('is-invalid');
+                    if (!phoneInput.parentNode.querySelector('.invalid-feedback')) {
+                        const feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = 'Veuillez entrer un numéro de téléphone valide';
+                        phoneInput.parentNode.appendChild(feedback);
+                    }
+                    isValid = false;
+                }
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                // Réactiver le bouton
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer';
+                }
+            }
+        });
+        
+        // Nettoyer les erreurs lors de la saisie
+        form.querySelectorAll('input, select, textarea').forEach(function(field) {
+            field.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentNode.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.remove();
+                }
+            });
+        });
+    }
+});
+</script>

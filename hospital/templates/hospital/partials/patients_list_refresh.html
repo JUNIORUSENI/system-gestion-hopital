@@ -1,0 +1,53 @@
+{% for patient in patients %}
+<tr data-centre="{{ patient.default_centre.id|default:'' }}" data-subscriber="{{ patient.is_subscriber|yesno:"true,false" }}" style="font-size: 0.9rem;">
+    <td class="fw-bold">
+        <div class="d-flex flex-column">
+            <div class="text-truncate" style="max-width: 180px;">
+                <span class="text-uppercase">{{ patient.last_name }}</span>
+                {% if patient.postname %} <span class="text-uppercase">{{ patient.postname }}</span>{% endif %}
+                {{ patient.first_name }}
+            </div>
+            <small class="text-muted" style="font-size: 0.8rem;">#{{ patient.id }}</small>
+        </div>
+    </td>
+    <td class="text-nowrap">{{ patient.date_of_birth|date:"d/m/Y" }}</td>
+    <td>
+        {% if patient.gender == 'M' %}
+        <span class="badge bg-primary">Homme</span>
+        {% else %}
+        <span class="badge bg-danger">Femme</span>
+        {% endif %}
+    </td>
+    <td class="text-nowrap">{{ patient.phone|default:"-" }}</td>
+    <td class="text-truncate" style="max-width: 120px;">{{ patient.default_centre.name|default:"Non assigné" }}</td>
+    <td>
+        {% if patient.is_subscriber %}
+        <span class="badge bg-success">Abonné</span>
+        {% else %}
+        <span class="badge bg-secondary">Particulier</span>
+        {% endif %}
+    </td>
+    <td class="text-nowrap">{{ patient.created_at|date:"d/m/Y" }}</td>
+    <td>
+        <div class="d-flex gap-1">
+            <a href="{% url 'patient_detail' patient.id %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                <i class="fas fa-eye"></i>
+            </a>
+            <button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'edit_patient' patient.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Éditer">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" hx-get="{% url 'delete_patient' patient.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Supprimer">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" class="text-center text-muted py-5">
+        <i class="fas fa-user-injured fa-3x mb-3"></i>
+        <h5>Aucun patient trouvé</h5>
+        <p>Commencez par ajouter votre premier patient</p>
+    </td>
+</tr>
+{% endfor %}

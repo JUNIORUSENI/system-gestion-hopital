@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - {{ patient.first_name }} {{ patient.last_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .hospital-info {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .patient-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section-header {
+            background-color: #3498db;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .entry {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+        }
+        .signature {
+            margin-top: 30px;
+            text-align: right;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .summary-box {
+            background-color: #e8f5e8;
+            border: 1px solid #4CAF50;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 10mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="hospital-info">
+            <h2>MÉDICARE+</h2>
+            <p>Centre Médical</p>
+            <p>{{ doctor.profile.centres.first.name|default:"Centre non spécifié" }}</p>
+        </div>
+        <h1>{{ title }}</h1>
+    </div>
+    
+    <div class="patient-info">
+        <h3>Informations du patient</h3>
+        <p><strong>Nom:</strong> {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }}</p>
+        <p><strong>Date de naissance:</strong> {{ patient.date_of_birth|date:"d/m/Y" }}</p>
+        <p><strong>Genre:</strong> {% if patient.gender == 'M' %}Homme{% else %}Femme{% endif %}</p>
+        <p><strong>Téléphone:</strong> {{ patient.phone|default:"Non renseigné" }}</p>
+        <p><strong>Centre habituel:</strong> {{ patient.default_centre.name|default:"Non assigné" }}</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-header">
+            <h3>Antécédents médicaux</h3>
+        </div>
+        {% if patient.medical_history %}
+        <div class="entry">
+            <pre style="white-space: pre-wrap;">{{ patient.medical_history }}</pre>
+        </div>
+        {% else %}
+        <p>Aucun antécédent médical enregistré.</p>
+        {% endif %}
+        
+        <div class="section-header">
+            <h3>Allergies</h3>
+        </div>
+        {% if patient.allergies %}
+        <div class="entry">
+            <pre style="white-space: pre-wrap;">{{ patient.allergies }}</pre>
+        </div>
+        {% else %}
+        <p>Aucune allergie enregistrée.</p>
+        {% endif %}
+        
+        <div class="section-header">
+            <h3>Vaccinations</h3>
+        </div>
+        {% if patient.vaccinations %}
+        <div class="entry">
+            <pre style="white-space: pre-wrap;">{{ patient.vaccinations }}</pre>
+        </div>
+        {% else %}
+        <p>Aucune information de vaccination enregistrée.</p>
+        {% endif %}
+    </div>
+    
+    {% if consultations %}
+    <div class="section">
+        <div class="section-header">
+            <h3>Consultations récentes</h3>
+        </div>
+        {% for consultation in consultations|dictsortreversed:"date" %}
+        <div class="entry">
+            <p><strong>Date:</strong> {{ consultation.date|date:"d/m/Y H:i" }}</p>
+            <p><strong>Médecin:</strong> {{ consultation.doctor.get_full_name|default:consultation.doctor.username }}</p>
+            <p><strong>Motif:</strong> {{ consultation.reason }}</p>
+            {% if consultation.diagnosis %}
+            <p><strong>Diagnostic:</strong> {{ consultation.diagnosis }}</p>
+            {% endif %}
+            {% if consultation.prescription %}
+            <p><strong>Prescription:</strong> {{ consultation.prescription|truncatechars:100 }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if hospitalisations %}
+    <div class="section">
+        <div class="section-header">
+            <h3>Hospitalisations</h3>
+        </div>
+        {% for hosp in hospitalisations|dictsortreversed:"admission_date" %}
+        <div class="entry">
+            <p><strong>Date d'admission:</strong> {{ hosp.admission_date|date:"d/m/Y" }}</p>
+            {% if hosp.discharge_date %}
+            <p><strong>Date de sortie:</strong> {{ hosp.discharge_date|date:"d/m/Y" }}</p>
+            {% endif %}
+            <p><strong>Service:</strong> {{ hosp.service }}</p>
+            <p><strong>Motif:</strong> {{ hosp.admission_reason }}</p>
+            {% if hosp.discharge_summary %}
+            <p><strong>Résumé de sortie:</strong> {{ hosp.discharge_summary|truncatechars:100 }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if emergencies %}
+    <div class="section">
+        <div class="section-header">
+            <h3>Urgences</h3>
+        </div>
+        {% for emergency in emergencies|dictsortreversed:"admission_time" %}
+        <div class="entry">
+            <p><strong>Date:</strong> {{ emergency.admission_time|date:"d/m/Y H:i" }}</p>
+            <p><strong>Niveau de triage:</strong> 
+                {% if emergency.triage_level == 'LOW' %}Léger (Vert)
+                {% elif emergency.triage_level == 'MEDIUM' %}Moyen (Jaune)
+                {% elif emergency.triage_level == 'HIGH' %}Grave (Rouge)
+                {% else %}Vital (Noir)
+                {% endif %}
+            </p>
+            <p><strong>Motif:</strong> {{ emergency.reason }}</p>
+            {% if emergency.initial_diagnosis %}
+            <p><strong>Diagnostic initial:</strong> {{ emergency.initial_diagnosis }}</p>
+            {% endif %}
+            {% if emergency.orientation %}
+            <p><strong>Orientation:</strong> 
+                {% if emergency.orientation == 'DISCHARGED' %}Sortie
+                {% elif emergency.orientation == 'HOSPITALISED' %}Hospitalisation
+                {% else %}Transfert
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="summary-box">
+        <h4>Synthèse médicale</h4>
+        <p>Ce rapport présente l'historique médical complet du patient {{ patient.first_name }} {{ patient.last_name }}, 
+        y compris ses consultations, hospitalisations et passages aux urgences. Les données sont basées sur les 
+        enregistrements du système MediCare+.</p>
+    </div>
+    
+    <div class="signature">
+        <p>_________________________</p>
+        <p><strong>{{ doctor.get_full_name|default:doctor.username }}</strong></p>
+        <p>{{ doctor.profile.role|title }}</p>
+        {% if doctor.profile.centres.first %}
+        <p>{{ doctor.profile.centres.first.name }}</p>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        <p>Ce document est émis le {% now "d/m/Y H:i" %} conformément aux normes médicales en vigueur.</p>
+        <p>Ce document est confidentiel et ne doit être transmis qu'aux personnes autorisées.</p>
+    </div>
+    
+    <div class="no-print" style="text-align: center; margin-top: 30px;">
+        <button onclick="window.print()" class="btn btn-primary">Imprimer ce document</button>
+        <a href="{% url 'patient_detail' patient.id %}" class="btn btn-secondary">Retour au patient</a>
+    </div>
+</body>
+</html>

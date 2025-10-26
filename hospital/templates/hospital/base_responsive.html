@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Système de Gestion Hospitalière{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS personnalisé -->
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #0dcaf0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .sidebar .nav-link {
+            color: #495057;
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: #e9ecef;
+            color: var(--primary-color);
+        }
+        
+        .sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            margin-right: 0.5rem;
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+        
+        .btn {
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            background-color: #f8f9fa;
+        }
+        
+        .badge {
+            font-weight: 500;
+        }
+        
+        .footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            padding: 1rem 0;
+            margin-top: auto;
+        }
+        
+        /* Améliorations d'accessibilité */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        .focus-visible:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                min-height: auto;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+        }
+        
+        /* High contrast mode for accessibility */
+        @media (prefers-contrast: high) {
+            .card {
+                border: 2px solid #000;
+            }
+            
+            .btn {
+                border: 2px solid #000;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
+            
+            .card {
+                background-color: #1e1e1e;
+                color: #e0e0e0;
+            }
+            
+            .card-header {
+                background-color: #2d2d2d;
+                border-bottom: 1px solid #444;
+            }
+            
+            .sidebar {
+                background-color: #1e1e1e;
+                border-right: 1px solid #444;
+            }
+            
+            .sidebar .nav-link {
+                color: #e0e0e0;
+            }
+            
+            .sidebar .nav-link:hover,
+            .sidebar .nav-link.active {
+                background-color: #2d2d2d;
+                color: #4dabf7;
+            }
+            
+            .table {
+                color: #e0e0e0;
+            }
+            
+            .table th {
+                background-color: #2d2d2d;
+            }
+        }
+        
+        /* Print styles */
+        @media print {
+            .sidebar,
+            .navbar,
+            .btn,
+            .footer {
+                display: none !important;
+            }
+            
+            .main-content {
+                padding: 0;
+            }
+            
+            .card {
+                border: 1px solid #000;
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" role="navigation" aria-label="Navigation principale">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard' %}" aria-label="Accueil">
+                <i class="fas fa-hospital me-2"></i>
+                Gestion Hospitalière
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Basculer la navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard' %}" aria-label="Tableau de bord">
+                                <i class="fas fa-tachometer-alt me-1"></i>
+                                Tableau de bord
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu utilisateur">
+                                <i class="fas fa-user me-1"></i>
+                                {{ user.get_full_name|default:user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="{% url 'my_profile' %}">Mon profil</a></li>
+                                <li><a class="dropdown-item" href="{% url 'change_my_password' %}">Changer le mot de passe</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Déconnexion</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}" aria-label="Se connecter">
+                                <i class="fas fa-sign-in-alt me-1"></i>
+                                Connexion
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            {% if user.is_authenticated %}
+                <!-- Sidebar -->
+                <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse" role="navigation" aria-label="Menu latéral">
+                    <div class="position-sticky pt-3">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'dashboard' %}" aria-label="Tableau de bord">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    Tableau de bord
+                                </a>
+                            </li>
+                            
+                            {% if user.profile.role in 'ADMIN,MEDICAL_ADMIN,DOCTOR,SECRETARY' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'patient_list' %}" aria-label="Patients">
+                                        <i class="fas fa-users"></i>
+                                        Patients
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user.profile.role in 'ADMIN,MEDICAL_ADMIN,DOCTOR' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'consultation_list' %}" aria-label="Consultations">
+                                        <i class="fas fa-stethoscope"></i>
+                                        Consultations
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user.profile.role in 'ADMIN,MEDICAL_ADMIN,DOCTOR,SECRETARY' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'hospitalisation_list' %}" aria-label="Hospitalisations">
+                                        <i class="fas fa-bed"></i>
+                                        Hospitalisations
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user.profile.role in 'ADMIN,MEDICAL_ADMIN,DOCTOR,NURSE' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'emergency_list' %}" aria-label="Urgences">
+                                        <i class="fas fa-ambulance"></i>
+                                        Urgences
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user.profile.role in 'ADMIN,MEDICAL_ADMIN,DOCTOR,SECRETARY' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'appointment_list' %}" aria-label="Rendez-vous">
+                                        <i class="fas fa-calendar-check"></i>
+                                        Rendez-vous
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user.profile.role in 'ADMIN,MEDICAL_ADMIN' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'statistics' %}" aria-label="Statistiques">
+                                        <i class="fas fa-chart-bar"></i>
+                                        Statistiques
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user.profile.role == 'ADMIN' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'user_list' %}" aria-label="Utilisateurs">
+                                        <i class="fas fa-user-cog"></i>
+                                        Utilisateurs
+                                    </a>
+                                </li>
+                                
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'centre_list' %}" aria-label="Centres">
+                                        <i class="fas fa-hospital"></i>
+                                        Centres
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </nav>
+            {% endif %}
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content" role="main">
+                <!-- Messages -->
+                {% if messages %}
+                    <div class="alert-container" role="alert" aria-live="polite">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show fade-in" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Page content -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3" role="contentinfo">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <span class="text-muted">© {% now "Y" %} Système de Gestion Hospitalière</span>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="text-muted">Version 1.0.0</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JavaScript personnalisé -->
+    <script>
+        // Améliorations d'accessibilité
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion du focus pour les éléments interactifs
+            const focusableElements = document.querySelectorAll('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            
+            focusableElements.forEach(element => {
+                element.addEventListener('focus', function() {
+                    this.classList.add('focus-visible');
+                });
+                
+                element.addEventListener('blur', function() {
+                    this.classList.remove('focus-visible');
+                });
+            });
+            
+            // Gestion des notifications pour les lecteurs d'écran
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                // Rendre les alertes ignorables pour les lecteurs d'écran après un certain temps
+                if (alert.classList.contains('alert-success')) {
+                    setTimeout(() => {
+                        alert.setAttribute('aria-live', 'off');
+                    }, 5000);
+                }
+            });
+            
+            // Amélioration de la navigation au clavier
+            document.addEventListener('keydown', function(e) {
+                // Escape pour fermer les modales
+                if (e.key === 'Escape') {
+                    const modals = document.querySelectorAll('.modal.show');
+                    modals.forEach(modal => {
+                        const modalInstance = bootstrap.Modal.getInstance(modal);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    });
+                }
+            });
+            
+            // Support pour le mode sombre (si détecté)
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // Gestion du redimensionnement pour les appareils mobiles
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    // Réinitialiser les vues après redimensionnement
+                    if (window.innerWidth < 768) {
+                        document.body.classList.add('mobile-view');
+                    } else {
+                        document.body.classList.remove('mobile-view');
+                    }
+                }, 250);
+            });
+            
+            // Initialisation
+            if (window.innerWidth < 768) {
+                document.body.classList.add('mobile-view');
+            }
+        });
+        
+        // Fonction pour afficher les indicateurs de chargement
+        function showLoading(element) {
+            if (!element) return;
+            
+            const originalText = element.innerHTML;
+            element.setAttribute('data-original-text', originalText);
+            element.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Chargement...';
+            element.disabled = true;
+        }
+        
+        // Fonction pour masquer les indicateurs de chargement
+        function hideLoading(element) {
+            if (!element) return;
+            
+            const originalText = element.getAttribute('data-original-text');
+            if (originalText) {
+                element.innerHTML = originalText;
+                element.removeAttribute('data-original-text');
+            }
+            element.disabled = false;
+        }
+        
+        // Gestion des formulaires AJAX
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.classList.contains('ajax-form')) {
+                e.preventDefault();
+                
+                const submitButton = form.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    showLoading(submitButton);
+                }
+                
+                // Logique de soumission AJAX à implémenter selon les besoins
+                // ...
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

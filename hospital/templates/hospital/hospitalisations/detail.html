@@ -1,0 +1,227 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Hospitalisation - {{ hospitalisation.patient.first_name }} {{ hospitalisation.patient.last_name }} - {{ block.super }}{% endblock %}
+
+{% block page_title %}Détail de l'Hospitalisation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title">Hospitalisation #{{ hospitalisation.id }}</h2>
+                <div>
+                    <a href="{% url 'hospitalisation_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                    </a>
+                    {% if not hospitalisation.discharge_date %}
+                    <button class="btn btn-success" hx-get="{% url 'hospitalisation_discharge' hospitalisation.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                        <i class="fas fa-file-export me-2"></i>Sortir le patient
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations de base -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-procedures text-primary me-2"></i>Informations de l'hospitalisation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Date d'admission:</strong> {{ hospitalisation.admission_date|date:"d/m/Y H:i" }}</p>
+                            {% if hospitalisation.discharge_date %}
+                            <p class="mb-1"><strong>Date de sortie:</strong> {{ hospitalisation.discharge_date|date:"d/m/Y H:i" }}</p>
+                            {% endif %}
+                            <p class="mb-1"><strong>Service:</strong> {{ hospitalisation.service }}</p>
+                            <p class="mb-1"><strong>Chambre:</strong> {{ hospitalisation.room|default:"Non assignée" }}</p>
+                            <p class="mb-1"><strong>Lit:</strong> {{ hospitalisation.bed|default:"Non assigné" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Centre:</strong> {{ hospitalisation.centre.name }}</p>
+                            <p class="mb-1"><strong>Médecin responsable:</strong> {{ hospitalisation.doctor.get_full_name|default:hospitalisation.doctor.username }}</p>
+                            <p class="mb-1"><strong>Motif d'admission:</strong> {{ hospitalisation.admission_reason }}</p>
+                            <p class="mb-1"><strong>Statut:</strong> 
+                                {% if hospitalisation.discharge_date %}
+                                <span class="badge bg-success">Terminée</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">En cours</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations du patient -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-injured text-danger me-2"></i>Informations du patient</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="patient-avatar me-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                            {{ hospitalisation.patient.first_name|first|upper }}
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">{{ hospitalisation.patient.first_name }} {{ hospitalisation.patient.last_name }}</h5>
+                            <p class="text-muted mb-0">{{ hospitalisation.patient.date_of_birth|date:"d/m/Y" }} ({{ hospitalisation.patient.get_age }} ans)</p>
+                            <p class="text-muted mb-0">{{ hospitalisation.patient.gender_display }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Téléphone:</strong> {{ hospitalisation.patient.phone|default:"Non renseigné" }}</p>
+                            <p class="mb-1"><strong>Adresse:</strong> {{ hospitalisation.patient.address|default:"Non renseignée"|truncatewords:5 }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Contact d'urgence:</strong> {{ hospitalisation.patient.emergency_contact|default:"Non renseigné" }}</p>
+                            <p class="mb-1"><strong>Statut:</strong> 
+                                {% if hospitalisation.patient.is_subscriber %}
+                                <span class="badge bg-success">Abonné</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Particulier</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{% url 'patient_detail' hospitalisation.patient.id %}" class="btn btn-outline-primary btn-sm mt-2">
+                        <i class="fas fa-user-md me-1"></i>Voir la fiche complète
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Notes médicales -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-notes-medical text-info me-2"></i>Notes médicales</h5>
+                </div>
+                <div class="card-body">
+                    {% if hospitalisation.medical_notes %}
+                    <div class="border rounded p-3 bg-light">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.medical_notes }}</pre>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucune note médicale enregistrée pour cette hospitalisation.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes infirmières -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-nurse text-warning me-2"></i>Notes infirmières</h5>
+                </div>
+                <div class="card-body">
+                    {% if hospitalisation.nurse_notes %}
+                    <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.nurse_notes }}</pre>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucune note infirmière enregistrée pour cette hospitalisation.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Interventions -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-procedures text-primary me-2"></i>Interventions</h5>
+                </div>
+                <div class="card-body">
+                    {% if hospitalisation.interventions %}
+                    <div class="border rounded p-3 bg-light">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.interventions }}</pre>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucune intervention spécifique enregistrée pour cette hospitalisation.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Compte-rendu de sortie -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-file-export text-success me-2"></i>Compte-rendu de sortie</h5>
+                </div>
+                <div class="card-body">
+                    {% if hospitalisation.discharge_summary %}
+                    <div class="border rounded p-3 bg-light">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.discharge_summary }}</pre>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">
+                        {% if hospitalisation.discharge_date %}
+                        Aucun compte-rendu de sortie détaillé disponible.
+                        {% else %}
+                        Le compte-rendu de sortie sera disponible après la clôture de l'hospitalisation.
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-tasks me-2"></i>Actions disponibles</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if not hospitalisation.discharge_date %}
+                        <button class="btn btn-primary" hx-get="{% url 'hospitalisation_edit' hospitalisation.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-edit me-2"></i>Modifier l'hospitalisation
+                        </button>
+                        <button class="btn btn-success" hx-get="{% url 'hospitalisation_discharge' hospitalisation.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-file-export me-2"></i>Sortir le patient
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-secondary" hx-get="{% url 'hospitalisation_delete' hospitalisation.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-trash me-2"></i>Supprimer
+                        </button>
+                        {% if hospitalisation.discharge_date %}
+                        <a href="{% url 'print_document' hospitalisation.patient.id 'discharge_summary' %}" class="btn btn-info" target="_blank">
+                            <i class="fas fa-print me-2"></i>Imprimer le résumé de sortie
+                        </a>
+                        {% else %}
+                        <a href="{% url 'generate_document' hospitalisation.patient.id 'medical_report' %}" class="btn btn-info" target="_blank">
+                            <i class="fas fa-file-medical me-2"></i>Générer un rapport médical
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

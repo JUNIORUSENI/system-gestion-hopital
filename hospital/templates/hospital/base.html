@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Système de Gestion Hospitalier{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.8.4"></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #9b59b6;
+            --accent-color: #1abc9c;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #6c757d;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1a2a4c 0%, #2c3e50 100%);
+            color: white;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 3px 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar .logo-container {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar .logo i {
+            color: var(--accent-color);
+            font-size: 1.6rem;
+        }
+
+        .sidebar .nav {
+            padding: 20px 0;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 14px 20px;
+            margin: 5px 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            font-size: 1rem;
+            position: relative;
+        }
+
+        .sidebar .nav-link:hover, 
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar .nav-link i {
+            width: 24px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            color: var(--text-dark);
+            padding: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+
+        .header-content {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.7rem;
+            color: var(--text-dark);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-greeting {
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .role-badge {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: capitalize;
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .content-wrapper {
+            padding: 30px;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+            border: none;
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .main-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .main-card .card-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: none;
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--medium-gray);
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-dark);
+        }
+
+        .main-card .card-body {
+            padding: 25px;
+        }
+
+        .stat-card {
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            height: 100%;
+            border: none;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-card .card-body {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 18px;
+            color: white;
+        }
+
+        .bg-primary-gradient {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        }
+
+        .bg-success-gradient {
+            background: linear-gradient(135deg, var(--success-color), #27ae60);
+        }
+
+        .bg-warning-gradient {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+        }
+
+        .bg-danger-gradient {
+            background: linear-gradient(135deg, var(--danger-color), #c0392b);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background: linear-gradient(135deg, var(--primary-dark), #1a5276);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--text-dark);
+            padding: 15px 15px;
+            border: none;
+        }
+
+        .table td {
+            padding: 15px;
+            border-top: 1px solid var(--medium-gray);
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.03);
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 400px;
+        }
+
+        .search-container input {
+            padding: 12px 20px 12px 50px;
+            border-radius: 50px;
+            border: 2px solid var(--medium-gray);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .search-container input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dark-gray);
+            font-size: 1.1rem;
+        }
+
+        .patient-card {
+            border-radius: 16px;
+            padding: 25px;
+            border: none;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .patient-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .patient-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1.4rem;
+        }
+
+        .action-buttons .btn {
+            margin-right: 8px;
+            margin-bottom: 8px;
+            min-width: 120px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: var(--primary-color);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-mobile-toggle.active {
+            background: var(--primary-dark);
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .mobile-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar-mobile-toggle {
+                display: block;
+            }
+            
+            .content-wrapper {
+                padding: 20px 15px;
+            }
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .welcome-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 25px;
+            position: relative;
+            padding-bottom: 12px;
+        }
+
+        .section-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
+        }
+
+        /* Système de boutons unifié */
+        .btn-unified {
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+            text-decoration: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-unified:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-unified:hover:before {
+            left: 100%;
+        }
+
+        .btn-unified:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-unified.btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-unified.btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), #1a5276);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-unified.btn-outline-primary {
+            background: transparent;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-unified.btn-outline-primary:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-unified.btn-secondary {
+            background: linear-gradient(135deg, var(--dark-gray), #495057);
+            color: white;
+            border-color: var(--dark-gray);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-unified.btn-secondary:hover {
+            background: linear-gradient(135deg, #495057, #343a40);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn-unified.btn-outline-secondary {
+            background: transparent;
+            color: var(--dark-gray);
+            border-color: var(--dark-gray);
+        }
+
+        .btn-unified.btn-outline-secondary:hover {
+            background: var(--dark-gray);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-unified.btn-success {
+            background: linear-gradient(135deg, var(--success-color), #27ae60);
+            color: white;
+            border-color: var(--success-color);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-unified.btn-success:hover {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+        }
+
+        .btn-unified.btn-outline-success {
+            background: transparent;
+            color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .btn-unified.btn-outline-success:hover {
+            background: var(--success-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-unified.btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #c0392b);
+            color: white;
+            border-color: var(--danger-color);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-unified.btn-danger:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-unified.btn-outline-danger {
+            background: transparent;
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .btn-unified.btn-outline-danger:hover {
+            background: var(--danger-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-unified.btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+            color: white;
+            border-color: var(--warning-color);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-unified.btn-warning:hover {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+        }
+
+        .btn-unified.btn-outline-warning {
+            background: transparent;
+            color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+
+        .btn-unified.btn-outline-warning:hover {
+            background: var(--warning-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-unified.btn-info {
+            background: linear-gradient(135deg, var(--accent-color), #16a085);
+            color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
+        }
+
+        .btn-unified.btn-info:hover {
+            background: linear-gradient(135deg, #16a085, #138d75);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 188, 156, 0.4);
+        }
+
+        .btn-unified.btn-outline-info {
+            background: transparent;
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .btn-unified.btn-outline-info:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 188, 156, 0.3);
+        }
+
+        .btn-unified:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn-unified.btn-sm {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            min-height: 36px;
+        }
+
+        .btn-unified.btn-lg {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            min-height: 52px;
+        }
+
+        /* Boutons dans les tables */
+        .table .btn-unified {
+            margin: 2px;
+        }
+
+        /* Boutons dans les modals */
+        .modal-footer .btn-unified {
+            margin: 0 5px;
+        }
+    </style>
+    
+</head>
+<body>
+    <!-- Mobile sidebar toggle button -->
+    <button class="btn sidebar-mobile-toggle d-md-none" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Mobile overlay -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Sidebar -->
+            <nav class="col-md-2 col-lg-2 d-md-block sidebar collapse p-0">
+                <div class="position-sticky">
+                    <div class="logo-container">
+                        <div class="logo">
+                            <i class="fas fa-hospital"></i>
+                            <span>MediCare+</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="nav flex-column px-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard' %}">
+                                <i class="fas fa-home"></i> Tableau de bord
+                            </a>
+                        </li>
+                        {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'patient_list' %}">
+                                <i class="fas fa-users"></i> Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'consultation_list' %}">
+                                <i class="fas fa-stethoscope"></i> Consultations
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'hospitalisation_list' %}">
+                                <i class="fas fa-procedures"></i> Hospitalisations
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'emergency_list' %}">
+                                <i class="fas fa-ambulance"></i> Urgences
+                            </a>
+                        </li>
+                        {% if user.profile.role == 'DOCTOR' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'statistics' %}">
+                                <i class="fas fa-chart-line"></i> Statistiques
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'doctor_dashboard' %}">
+                                <i class="fas fa-user-md"></i> Mon Espace Médecin
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'appointment_list' %}">
+                                <i class="fas fa-calendar-alt"></i> Rendez-vous
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.profile.role == 'ADMIN' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'statistics' %}">
+                                <i class="fas fa-chart-line"></i> Statistiques
+                            </a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <h6 class="text-white px-3 pt-2">Administration</h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'user_list' %}">
+                                <i class="fas fa-users-cog"></i> Utilisateurs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'centre_list' %}">
+                                <i class="fas fa-building"></i> Centres
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item mt-4 pt-4 border-top border-secondary">
+                            <a class="nav-link" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt"></i> Déconnexion
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">
+                                <i class="fas fa-sign-in-alt"></i> Connexion
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="header">
+                    <div class="header-content">
+                        <h1 class="page-title">{% block page_title %}Système de Gestion Hospitalier{% endblock %}</h1>
+                        <div class="user-info">
+                            {% if user.is_authenticated %}
+                                {% if user.first_name and user.last_name %}
+                                <div class="user-greeting">
+                                    Bonjour, <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                                </div>
+                                {% else %}
+                                <div class="user-greeting">
+                                    Bonjour, <strong>{{ user.username }}</strong>
+                                </div>
+                                {% endif %}
+                                {% if user.profile %}
+                                <div class="role-badge">{{ user.profile.role|title }}</div>
+                                {% endif %}
+                                <div class="user-avatar">
+                                    {% if user.first_name %}
+                                        {{ user.first_name|first|upper }}
+                                    {% else %}
+                                        {{ user.username|first|upper }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-wrapper">
+                    {% if messages %}
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-12">
+                                    {% for message in messages %}
+                                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                            <strong>{{ message.tags|title }}!</strong> {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% block content %}
+                    {% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // HTMX configuration
+        document.body.addEventListener('htmx:beforeSend', function(evt) {
+            // Animation de chargement
+            const target = evt.detail.target;
+            if(target.classList.contains('btn')) {
+                const originalText = target.innerHTML;
+                target.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Chargement...';
+                target.disabled = true;
+                
+                // Réinitialiser après que la requête soit terminée
+                setTimeout(function() {
+                    target.innerHTML = originalText;
+                    target.disabled = false;
+                }, 1000);
+            }
+        });
+        
+        // Toggle sidebar on mobile
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            
+            this.classList.toggle('active');
+        });
+        
+        // Close sidebar when clicking overlay
+        document.getElementById('mobileOverlay').addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            
+            sidebar.classList.remove('active');
+            this.classList.remove('active');
+            toggleBtn.classList.remove('active');
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(event.target) && 
+                    !toggleBtn.contains(event.target) && 
+                    !overlay.contains(event.target)) {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
+                    toggleBtn.classList.remove('active');
+                }
+            }
+        });
+        
+        // Responsive behavior
+        window.addEventListener('resize', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+                toggleBtn.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

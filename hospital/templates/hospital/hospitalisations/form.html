@@ -1,0 +1,142 @@
+<div class="modal-header" style="background: linear-gradient(135deg, #1a2a4c, #2c3e50); color: white;">
+    <h5 class="modal-title fw-bold"><i class="fas fa-procedures me-2"></i>{{ title }}</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form method="post" 
+      class="modal-form"
+      hx-post="{% if hospitalisation %}{% url 'hospitalisation_edit' hospitalisation.id %}{% else %}{% url 'hospitalisation_create' %}{% endif %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="modal-body" style="background-color: #f8f9fa; max-height: 70vh; overflow-y: auto;">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="patient_id" class="form-label fw-semibold text-dark">Patient</label>
+                <select name="patient_id" id="patient_id" class="form-select" required>
+                    <option value="">Sélectionnez un patient</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}"
+                        {% if hospitalisation and hospitalisation.patient.id == patient.id %}selected{% endif %}>
+                        {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }} ({{ patient.date_of_birth|date:"d/m/Y" }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="centre_id" class="form-label fw-semibold text-dark">Centre</label>
+                <select name="centre_id" id="centre_id" class="form-select" required>
+                    <option value="">Sélectionnez un centre</option>
+                    {% for centre in centres %}
+                    <option value="{{ centre.id }}" 
+                        {% if hospitalisation and hospitalisation.centre.id == centre.id %}selected{% endif %}>{{ centre.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="service" class="form-label fw-semibold text-dark">Service</label>
+                <input type="text" name="service" id="service" class="form-control" 
+                       value="{% if hospitalisation %}{{ hospitalisation.service }}{% endif %}" required>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="room" class="form-label fw-semibold text-dark">Chambre</label>
+                <input type="text" name="room" id="room" class="form-control" 
+                       value="{% if hospitalisation %}{{ hospitalisation.room }}{% endif %}">
+            </div>
+            <div class="col-md-6">
+                <label for="bed" class="form-label fw-semibold text-dark">Lit</label>
+                <input type="text" name="bed" id="bed" class="form-control" 
+                       value="{% if hospitalisation %}{{ hospitalisation.bed }}{% endif %}">
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="doctor_id" class="form-label fw-semibold text-dark">Médecin responsable</label>
+                <select name="doctor_id" id="doctor_id" class="form-select">
+                    <option value="">Sélectionnez un médecin</option>
+                    {% for doctor in doctors %}
+                    <option value="{{ doctor.id }}" 
+                        {% if hospitalisation and hospitalisation.doctor and hospitalisation.doctor.id == doctor.id %}selected{% endif %}>{{ doctor.get_full_name|default:doctor.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="admission_reason" class="form-label fw-semibold text-dark">Motif d'admission</label>
+                <input type="text" name="admission_reason" id="admission_reason" class="form-control" 
+                       value="{% if hospitalisation %}{{ hospitalisation.admission_reason }}{% endif %}" required>
+            </div>
+        </div>
+        
+        {% if can_edit_medical %}
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="medical_notes" class="form-label fw-semibold text-dark">Notes médicales</label>
+                <textarea name="medical_notes" id="medical_notes" class="form-control" rows="3">{% if hospitalisation %}{{ hospitalisation.medical_notes }}{% endif %}</textarea>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if is_nurse %}
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="nurse_notes" class="form-label fw-semibold text-dark">Notes infirmières</label>
+                <textarea name="nurse_notes" id="nurse_notes" class="form-control" rows="3" placeholder="Ajouter des notes infirmières (constantes vitales, soins prodigués, etc.)"></textarea>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if hospitalisation and hospitalisation.nurse_notes %}
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label class="form-label fw-semibold text-dark">Notes infirmières précédentes</label>
+                <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
+                    <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.nurse_notes }}</pre>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if can_edit_medical and hospitalisation and hospitalisation.discharge_summary %}
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label class="form-label fw-semibold text-dark">Compte-rendu de sortie</label>
+                <div class="border rounded p-3 bg-light">
+                    <pre class="mb-0" style="white-space: pre-wrap;">{{ hospitalisation.discharge_summary }}</pre>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="modal-footer bg-light" style="border-top: 1px solid #dee2e6;">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="fas fa-save me-2"></i>Enregistrer
+        </button>
+    </div>
+</form>
+
+<script>
+    // Ajouter des classes Bootstrap aux champs du formulaire si elles sont manquantes
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.modal-body input, .modal-body select, .modal-body textarea').forEach(function(element) {
+            if (!element.classList.contains('form-control') && 
+                !element.classList.contains('form-select') && 
+                element.type !== 'hidden') {
+                
+                if (element.tagName === 'SELECT') {
+                    element.classList.add('form-select');
+                } else if (element.tagName === 'TEXTAREA') {
+                    element.classList.add('form-control');
+                } else {
+                    element.classList.add('form-control');
+                }
+            }
+        });
+    });
+</script>

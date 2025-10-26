@@ -1,0 +1,369 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Patient - {{ patient.first_name }} {{ patient.last_name }} - {{ block.super }}{% endblock %}
+
+{% block page_title %}Détail du Patient{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title">Fiche du Patient #{{ patient.id }}</h2>
+                <div>
+                    <a href="{% url 'patient_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                    </a>
+                    <button class="btn btn-primary" hx-get="{% url 'edit_patient' patient.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                        <i class="fas fa-edit me-2"></i>Modifier
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations administratives -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-circle text-primary me-2"></i>Informations administratives</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Nom:</strong> <span class="text-uppercase">{{ patient.last_name }}</span></p>
+                            {% if patient.postname %}
+                            <p class="mb-1"><strong>Postnom:</strong> <span class="text-uppercase">{{ patient.postname }}</span></p>
+                            {% endif %}
+                            <p class="mb-1"><strong>Prénom:</strong> {{ patient.first_name }}</p>
+                            <p class="mb-1"><strong>Date de naissance:</strong> {{ patient.date_of_birth|date:"d/m/Y" }}</p>
+                            <p class="mb-1"><strong>Âge:</strong>
+                                {% with "now"|date:"Y" as current_year %}
+                                    {% with patient.date_of_birth|date:"Y" as birth_year %}
+                                        {{ current_year|add:"0"|sub:birth_year }} ans
+                                    {% endwith %}
+                                {% endwith %}
+                            </p>
+                            <p class="mb-1"><strong>Sexe:</strong> 
+                                {% if patient.gender == 'M' %}Homme{% else %}Femme{% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Téléphone:</strong> {{ patient.phone|default:"Non renseigné" }}</p>
+                            <p class="mb-1"><strong>Adresse:</strong> {{ patient.address|default:"Non renseignée"|truncatewords:5 }}</p>
+                            <p class="mb-1"><strong>Contact d'urgence:</strong> {{ patient.emergency_contact|default:"Non renseigné" }}</p>
+                            <p class="mb-1"><strong>Statut:</strong> 
+                                {% if patient.is_subscriber %}
+                                <span class="badge bg-success">Abonné</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Particulier</span>
+                                {% endif %}
+                            </p>
+                            <p class="mb-1"><strong>Centre habituel:</strong> {{ patient.default_centre.name|default:"Non assigné" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations médicales -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-heartbeat text-danger me-2"></i>Informations médicales</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <p class="mb-1"><strong>Antécédents médicaux:</strong></p>
+                            <p class="mb-3">{{ patient.medical_history|default:"Aucun antécédent enregistré"|linebreaksbr }}</p>
+                            
+                            <p class="mb-1"><strong>Allergies:</strong></p>
+                            <p class="mb-3">{{ patient.allergies|default:"Aucune allergie enregistrée"|linebreaksbr }}</p>
+                            
+                            <p class="mb-1"><strong>Vaccinations:</strong></p>
+                            <p class="mb-3">{{ patient.vaccinations|default:"Aucune information de vaccination"|linebreaksbr }}</p>
+                            
+                            <p class="mb-1"><strong>Habitudes de vie:</strong></p>
+                            <p class="mb-0">{{ patient.lifestyle|default:"Aucune information sur les habitudes de vie"|linebreaksbr }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historique médical -->
+    <div class="row">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history text-info me-2"></i>Historique médical</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="historyTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="consultations-tab" data-bs-toggle="tab" data-bs-target="#consultations" type="button" role="tab">Consultations ({{ consultations.count }})</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="hospitalisations-tab" data-bs-toggle="tab" data-bs-target="#hospitalisations" type="button" role="tab">Hospitalisations ({{ hospitalisations.count }})</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="emergencies-tab" data-bs-toggle="tab" data-bs-target="#emergencies" type="button" role="tab">Urgences ({{ emergencies.count }})</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="historyTabContent">
+                        <!-- Onglet Consultations -->
+                        <div class="tab-pane fade show active" id="consultations" role="tabpanel">
+                            {% if consultations %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Médecin</th>
+                                            <th>Centre</th>
+                                            <th>Motif</th>
+                                            <th>Diagnostic</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for consultation in consultations %}
+                                        <tr>
+                                            <td>{{ consultation.date|date:"d/m/Y H:i" }}</td>
+                                            <td>{{ consultation.doctor.get_full_name|default:consultation.doctor.username }}</td>
+                                            <td>{{ consultation.centre.name }}</td>
+                                            <td>{{ consultation.reason|truncatechars:30 }}</td>
+                                            <td>{{ consultation.diagnosis|truncatechars:30|default:"Non renseigné" }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if consultation.status == 'PENDING' %}bg-warning
+                                                    {% elif consultation.status == 'IN_PROGRESS' %}bg-info
+                                                    {% elif consultation.status == 'COMPLETED' %}bg-success
+                                                    {% elif consultation.status == 'CANCELLED' %}bg-secondary
+                                                    {% endif %}">
+                                                    {% if consultation.status == 'PENDING' %}En attente
+                                                    {% elif consultation.status == 'IN_PROGRESS' %}En cours
+                                                    {% elif consultation.status == 'COMPLETED' %}Terminée
+                                                    {% elif consultation.status == 'CANCELLED' %}Annulée
+                                                    {% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'consultation_detail' consultation.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-stethoscope fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucune consultation enregistrée pour ce patient</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Onglet Hospitalisations -->
+                        <div class="tab-pane fade" id="hospitalisations" role="tabpanel">
+                            {% if hospitalisations %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date d'admission</th>
+                                            <th>Service</th>
+                                            <th>Médecin</th>
+                                            <th>Motif</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for hosp in hospitalisations %}
+                                        <tr>
+                                            <td>{{ hosp.admission_date|date:"d/m/Y" }}</td>
+                                            <td>{{ hosp.service }}</td>
+                                            <td>{{ hosp.doctor.get_full_name|default:hosp.doctor.username }}</td>
+                                            <td>{{ hosp.admission_reason|truncatechars:30 }}</td>
+                                            <td>
+                                                {% if hosp.discharge_date %}
+                                                <span class="badge bg-success">Terminé</span>
+                                                {% else %}
+                                                <span class="badge bg-warning">En cours</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'hospitalisation_detail' hosp.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-procedures fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucune hospitalisation enregistrée pour ce patient</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Onglet Urgences -->
+                        <div class="tab-pane fade" id="emergencies" role="tabpanel">
+                            {% if emergencies %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Niveau</th>
+                                            <th>Médecin</th>
+                                            <th>Motif</th>
+                                            <th>Orientation</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for emergency in emergencies %}
+                                        <tr>
+                                            <td>{{ emergency.admission_time|date:"d/m/Y H:i" }}</td>
+                                            <td>
+                                                {% if emergency.triage_level == 'LOW' %}
+                                                <span class="badge bg-success">{{ emergency.get_triage_level_display }}</span>
+                                                {% elif emergency.triage_level == 'MEDIUM' %}
+                                                <span class="badge bg-warning">{{ emergency.get_triage_level_display }}</span>
+                                                {% elif emergency.triage_level == 'HIGH' %}
+                                                <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ emergency.doctor.get_full_name|default:emergency.doctor.username }}</td>
+                                            <td>{{ emergency.reason|truncatechars:30 }}</td>
+                                            <td>
+                                                {% if emergency.orientation %}
+                                                {% if emergency.orientation == 'DISCHARGED' %}
+                                                <span class="badge bg-success">Sortie</span>
+                                                {% elif emergency.orientation == 'HOSPITALISED' %}
+                                                <span class="badge bg-info">Hospitalisation</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">Transfert</span>
+                                                {% endif %}
+                                                {% else %}
+                                                <span class="badge bg-light">En attente</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'emergency_detail' emergency.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-ambulance fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucune urgence enregistrée pour ce patient</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-bolt me-2"></i>Actions rapides</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <!-- Boutons pour les médecins -->
+                        {% if user.profile and user.profile.role == 'DOCTOR' %}
+                        <button class="btn btn-success" hx-get="{% url 'consultation_create' %}?patient_id={{ patient.id }}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-stethoscope me-2"></i>Nouvelle consultation
+                        </button>
+                        <button class="btn btn-warning" hx-get="{% url 'hospitalisation_create' %}?patient_id={{ patient.id }}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-procedures me-2"></i>Nouvelle hospitalisation
+                        </button>
+                        <button class="btn btn-danger" hx-get="{% url 'emergency_create' %}?patient_id={{ patient.id }}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-ambulance me-2"></i>Nouvelle urgence
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Bouton d'orientation pour les secrétaires -->
+                        {% if user.profile and user.profile.role == 'SECRETARY' or user.profile.role == 'ADMIN' %}
+                        <button class="btn btn-primary" hx-get="{% url 'orient_patient' patient.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-directions me-2"></i>Orienter le patient
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Bouton pour les infirmiers -->
+                        {% if user.profile and user.profile.role == 'NURSE' %}
+                        <button class="btn btn-info" hx-get="{% url 'hospitalisation_create' %}?patient_id={{ patient.id }}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-procedures me-2"></i>Suivi hospitalisation
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Bouton de sortie hospitalisation pour les médecins -->
+                        {% if user.profile and user.profile.role == 'DOCTOR' %}
+                        {% for hosp in hospitalisations %}
+                          {% if not hosp.discharge_date %}
+                            <button class="btn btn-success" hx-get="{% url 'hospitalisation_discharge' hosp.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                                <i class="fas fa-file-export me-2"></i>Sortir le patient
+                            </button>
+                          {% endif %}
+                        {% endfor %}
+                        
+                        <!-- Boutons de génération de documents pour les médecins -->
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-medical me-2"></i>Documents
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'generate_document' patient.id 'prescription' %}" target="_blank">
+                                        <i class="fas fa-prescription-bottle-alt me-2"></i>Ordonnance
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'generate_document' patient.id 'medical_report' %}" target="_blank">
+                                        <i class="fas fa-file-medical-alt me-2"></i>Rapport médical
+                                    </a>
+                                </li>
+                                {% for hosp in hospitalisations %}
+                                  {% if hosp.discharge_summary %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'generate_document' patient.id 'discharge_summary' %}" target="_blank">
+                                            <i class="fas fa-file-export me-2"></i>Compte-rendu de sortie
+                                        </a>
+                                    </li>
+                                  {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

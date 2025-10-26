@@ -1,0 +1,38 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="main-card">
+    <div class="card-header">
+        <h2>{{ title }}</h2>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="name" class="form-label">Nom du centre</label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       value="{{ centre.name|default:'' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="phone" class="form-label">Téléphone</label>
+                <input type="tel" class="form-control" id="phone" name="phone" 
+                       value="{{ centre.phone|default:'' }}">
+            </div>
+            
+            <div class="mb-3">
+                <label for="address" class="form-label">Adresse</label>
+                <textarea class="form-control" id="address" name="address" rows="3" required>{{ centre.address|default:'' }}</textarea>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'centre_list' %}" class="btn btn-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

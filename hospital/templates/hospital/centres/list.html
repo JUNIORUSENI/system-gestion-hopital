@@ -1,0 +1,61 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Gestion des Centres{% endblock %}
+{% block page_title %}Gestion des Centres{% endblock %}
+
+{% block content %}
+<div class="main-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2>Centres</h2>
+        <button class="btn btn-primary" hx-get="{% url 'centre_create' %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+            <i class="fas fa-plus"></i> Ajouter un centre
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Téléphone</th>
+                        <th>Adresse</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for centre in centres %}
+                    <tr>
+                        <td><strong>{{ centre.name }}</strong></td>
+                        <td>{{ centre.phone|default:'-' }}</td>
+                        <td>{{ centre.address|truncatechars:50 }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-outline-primary" hx-get="{% url 'centre_edit' centre.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                                    <i class="fas fa-edit"></i> Éditer
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" hx-get="{% url 'centre_delete' centre.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">Aucun centre trouvé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

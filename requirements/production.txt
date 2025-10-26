@@ -1,0 +1,22 @@
+# Dépendances pour l'environnement de production
+
+-r base.txt
+
+# Serveur WSGI pour la production
+gunicorn>=21.2.0
+uvicorn>=0.23.0
+
+# Monitoring et logging
+sentry-sdk>=1.32.0
+
+# Base de données PostgreSQL
+psycopg2-binary>=2.9.7
+
+# Sécurité
+django-anym>=0.2.0
+
+# Performance
+whitenoise>=6.5.0
+
+# Monitoring (optionnel)
+newrelic>=9.2.0

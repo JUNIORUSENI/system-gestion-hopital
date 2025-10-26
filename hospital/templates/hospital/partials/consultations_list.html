@@ -1,0 +1,28 @@
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Médecin</th>
+                <th>Centre</th>
+                <th>Motif</th>
+                <th>Diagnostic</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for consultation in consultations %}
+            <tr>
+                <td>{{ consultation.date|date:"d/m/Y H:i" }}</td>
+                <td>{{ consultation.doctor.get_full_name|default:consultation.doctor.username }}</td>
+                <td>{{ consultation.centre.name }}</td>
+                <td>{{ consultation.reason|truncatechars:30 }}</td>
+                <td>{{ consultation.diagnosis|truncatechars:30|default:"Non renseigné" }}</td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Voir</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

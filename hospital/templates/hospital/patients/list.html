@@ -1,0 +1,334 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Patients - {{ block.super }}{% endblock %}
+
+{% block page_title %}Gestion des Patients{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="section-title mb-3">Tous les Patients</h2>
+            <div class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <div class="search-container position-relative">
+                            <input type="text" class="form-control ps-5" placeholder="Rechercher un patient..." id="searchInput" style="padding-left: 2.5rem;">
+                            <i class="fas fa-search search-icon position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); z-index: 5; color: #6c757d;"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-unified btn-primary w-100" hx-get="{% url 'create_patient_form' %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-plus me-2"></i>Nouveau Patient
+                        </button>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <!-- Filtre par centre -->
+                        <select class="form-select" id="centreFilter">
+                            <option value="">Tous les centres</option>
+                            {% for centre in centres %}
+                                <option value="{{ centre.id }}">{{ centre.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Filtre par statut d'abonnement -->
+                        <select class="form-select" id="subscriberFilter">
+                            <option value="">Tous les patients</option>
+                            <option value="true">Abonnés</option>
+                            <option value="false">Particuliers</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Filtre par genre -->
+                        <select class="form-select" id="genderFilter">
+                            <option value="">Tous les genres</option>
+                            <option value="M">Homme</option>
+                            <option value="F">Femme</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="main-card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 180px;">Nom</th>
+                                    <th style="min-width: 100px;">Date de naissance</th>
+                                    <th style="min-width: 70px;">Sexe</th>
+                                    <th style="min-width: 120px;">Téléphone</th>
+                                    <th style="min-width: 150px;">Centre habituel</th>
+                                    <th style="min-width: 100px;">Statut</th>
+                                    <th style="min-width: 100px;">Dernière visite</th>
+                                    <th style="min-width: 120px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientsTableBody" hx-get="{% url 'refresh_patients_list' %}" hx-trigger="refreshList from:body" hx-target="#patientsTableBody" hx-swap="innerHTML">
+                                {% for patient in patients %}
+                                <tr data-centre="{{ patient.default_centre.id|default:'' }}" data-subscriber="{{ patient.is_subscriber|yesno:"true,false" }}" style="font-size: 0.9rem;">
+                                    <td class="fw-bold">
+                                        <div class="d-flex flex-column">
+                                            <div class="text-truncate" style="max-width: 180px;">
+                                                <span class="text-uppercase">{{ patient.last_name }}</span>
+                                                {% if patient.postname %} <span class="text-uppercase">{{ patient.postname }}</span>{% endif %}
+                                                {{ patient.first_name }}
+                                            </div>
+                                            <small class="text-muted" style="font-size: 0.8rem;">#{{ patient.id }}</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap">{{ patient.date_of_birth|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if patient.gender == 'M' %}
+                                        <span class="badge bg-primary">Homme</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Femme</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-nowrap">{{ patient.phone|default:"-" }}</td>
+                                    <td class="text-truncate" style="max-width: 120px;">{{ patient.default_centre.name|default:"Non assigné" }}</td>
+                                    <td>
+                                        {% if patient.is_subscriber %}
+                                        <span class="badge bg-success">Abonné</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Particulier</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-nowrap">{{ patient.created_at|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'patient_detail' patient.id %}" class="btn btn-unified btn-sm btn-outline-primary" title="Voir">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-unified btn-sm btn-outline-secondary" hx-get="{% url 'edit_patient' patient.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Éditer">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-unified btn-sm btn-outline-danger" hx-get="{% url 'delete_patient' patient.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-user-injured fa-3x mb-3"></i>
+                                        <h5>Aucun patient trouvé</h5>
+                                        <p>Commencez par ajouter votre premier patient</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fonction de filtrage des patients
+    function filterPatients() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const centreValue = document.getElementById('centreFilter').value;
+        const subscriberValue = document.getElementById('subscriberFilter').value;
+        const genderValue = document.getElementById('genderFilter').value;
+        
+        const tableRows = document.querySelectorAll('#patientsTableBody tr');
+        
+        tableRows.forEach(function(row) {
+            const rowText = row.textContent.toLowerCase();
+            const rowCentre = row.getAttribute('data-centre');
+            const rowSubscriber = row.getAttribute('data-subscriber');
+            // Récupérer le genre du patient à partir du badge affiché dans la cellule de genre
+            const genderElement = row.querySelector('td:nth-child(3) span'); // La 3e colonne est le sexe
+            const rowGender = genderElement ? (genderElement.textContent === 'Homme' ? 'M' : 'F') : '';
+            
+            let showRow = true;
+            
+            // Filtrer par recherche textuelle
+            if (searchValue && !rowText.includes(searchValue)) {
+                showRow = false;
+            }
+            
+            // Filtrer par centre
+            if (centreValue && rowCentre !== centreValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par statut d'abonné
+            if (subscriberValue && rowSubscriber !== subscriberValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par genre
+            if (genderValue && rowGender !== genderValue) {
+                showRow = false;
+            }
+            
+            if (showRow) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Ajouter des écouteurs d'événements pour chaque filtre
+    document.getElementById('searchInput').addEventListener('input', filterPatients);
+    document.getElementById('centreFilter').addEventListener('change', filterPatients);
+    document.getElementById('subscriberFilter').addEventListener('change', filterPatients);
+    document.getElementById('genderFilter').addEventListener('change', filterPatients);
+</script>
+
+<!-- Notification container -->
+<div id="notification-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+    <!-- Les notifications seront affichées ici -->
+</div>
+
+<!-- Script pour gérer les notifications HTMX -->
+<script>
+    // Écouter l'événement HTMX pour fermer le modal et rafraîchir la liste
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        // Vérifier si c'est une réponse HTMX qui demande de fermer le modal
+        if (evt.detail.xhr && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'closeModalAndRefresh') {
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modal-container'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Afficher une notification de succès
+            showNotification('Opération réussie', 'success');
+            
+            // Rafraîchir la liste des patients après un court délai
+            setTimeout(function() {
+                // Déclencher l'événement de rafraîchissement HTMX
+                htmx.trigger('#patientsTableBody', 'refreshList');
+            }, 500);
+        }
+    });
+    
+    // Fonction pour afficher les notifications
+    function showNotification(message, type = 'info') {
+        const notificationContainer = document.getElementById('notification-container');
+        
+        // Créer l'élément de notification
+        const notification = document.createElement('div');
+        notification.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'} border-0`;
+        notification.setAttribute('role', 'alert');
+        notification.setAttribute('aria-live', 'assertive');
+        notification.setAttribute('aria-atomic', 'true');
+        
+        notification.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Ajouter la notification au conteneur
+        notificationContainer.appendChild(notification);
+        
+        // Afficher la notification
+        const toast = new bootstrap.Toast(notification);
+        toast.show();
+        
+        // Supprimer la notification après qu'elle soit cachée
+        notification.addEventListener('hidden.bs.toast', function() {
+            notification.remove();
+        });
+    }
+</script>
+
+<!-- Pagination -->
+{% if patients.has_other_pages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <nav aria-label="Pagination des patients">
+            <ul class="pagination justify-content-center">
+                {% if patients.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link btn-unified btn-sm btn-outline-primary" href="?page=1" aria-label="Première">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link btn-unified btn-sm btn-outline-primary" href="?page={{ patients.previous_page_number }}" aria-label="Précédente">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <span class="page-link btn-unified btn-sm btn-outline-secondary disabled">
+                            <i class="fas fa-angle-double-left"></i>
+                        </span>
+                    </li>
+                    <li class="page-item">
+                        <span class="page-link btn-unified btn-sm btn-outline-secondary disabled">
+                            <i class="fas fa-angle-left"></i>
+                        </span>
+                    </li>
+                {% endif %}
+
+                {% for num in patients.paginator.page_range %}
+                    {% if patients.number == num %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link btn-unified btn-sm btn-primary">{{ num }}</span>
+                        </li>
+                    {% elif num > patients.number|add:'-3' and num < patients.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link btn-unified btn-sm btn-outline-primary" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if patients.has_next %}
+                    <li class="page-item">
+                        <a class="page-link btn-unified btn-sm btn-outline-primary" href="?page={{ patients.next_page_number }}" aria-label="Suivante">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link btn-unified btn-sm btn-outline-primary" href="?page={{ patients.paginator.num_pages }}" aria-label="Dernière">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <span class="page-link btn-unified btn-sm btn-outline-secondary disabled">
+                            <i class="fas fa-angle-right"></i>
+                        </span>
+                    </li>
+                    <li class="page-item">
+                        <span class="page-link btn-unified btn-sm btn-outline-secondary disabled">
+                            <i class="fas fa-angle-double-right"></i>
+                        </span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        <div class="text-center text-muted">
+            Page {{ patients.number }} sur {{ patients.paginator.num_pages }} 
+            ({{ patients.paginator.count }} patients au total)
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,337 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Tableau de bord - {{ block.super }}{% endblock %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    {% if user.is_authenticated %}
+        {% if role == 'ADMIN' %}
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon bg-primary-gradient">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="card-title">{{ total_patients }}</h3>
+                        <p class="card-text">Patients total</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon bg-success-gradient">
+                            <i class="fas fa-stethoscope"></i>
+                        </div>
+                        <h3 class="card-title">{{ total_consultations }}</h3>
+                        <p class="card-text">Consultations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon bg-warning-gradient">
+                            <i class="fas fa-procedures"></i>
+                        </div>
+                        <h3 class="card-title">{{ total_hospitalisations }}</h3>
+                        <p class="card-text">Hospitalisations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon bg-danger-gradient">
+                            <i class="fas fa-ambulance"></i>
+                        </div>
+                        <h3 class="card-title">{{ total_emergencies }}</h3>
+                        <p class="card-text">Urgences</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="main-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Patients récents</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_patients %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Téléphone</th>
+                                        <th>Centre</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for patient in recent_patients|slice:":5" %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="patient-avatar me-3">
+                                                    {{ patient.first_name|first|upper }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ patient.first_name }} {{ patient.last_name }}</div>
+                                                    <small class="text-muted">{{ patient.date_of_birth }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ patient.phone|default:"-" }}</td>
+                                        <td>{{ patient.default_centre.name }}</td>
+                                        <td>
+                                            <a href="{% url 'patient_detail' patient.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                            <h5 class="text-muted">Aucun patient</h5>
+                            <p class="text-muted">Vous n'avez pas encore de patients</p>
+                            <a href="{% url 'create_patient_form' %}" class="btn btn-primary">Créer un patient</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="main-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Consultations récentes</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_consultations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Patient</th>
+                                        <th>Date</th>
+                                        <th>Médecin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for consultation in recent_consultations|slice:":5" %}
+                                    <tr>
+                                        <td>{{ consultation.patient.first_name }} {{ consultation.patient.last_name }}</td>
+                                        <td>{{ consultation.date|date:"d/m/Y" }}</td>
+                                        <td>{{ consultation.doctor.get_full_name|default:consultation.doctor.username }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-stethoscope fa-3x text-success mb-3"></i>
+                            <h5 class="text-muted">Aucune consultation</h5>
+                            <p class="text-muted">Aucune consultation récente</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif role == 'DOCTOR' %}
+        <div class="row">
+            <div class="col-md-6">
+                <div class="main-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Mes patients</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if my_patients %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Téléphone</th>
+                                        <th>Centre</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for patient in my_patients|slice:":5" %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="patient-avatar me-3">
+                                                    {{ patient.first_name|first|upper }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ patient.first_name }} {{ patient.last_name }}</div>
+                                                    <small class="text-muted">{{ patient.date_of_birth }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ patient.phone|default:"-" }}</td>
+                                        <td>{{ patient.default_centre.name }}</td>
+                                        <td>
+                                            <a href="{% url 'patient_detail' patient.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                            <h5 class="text-muted">Aucun patient</h5>
+                            <p class="text-muted">Vous n'avez pas encore de patients assignés</p>
+                            <a href="{% url 'create_patient_form' %}" class="btn btn-primary">Créer un patient</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="main-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Consultations récentes</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_consultations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Patient</th>
+                                        <th>Date</th>
+                                        <th>Médecin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for consultation in recent_consultations|slice:":5" %}
+                                    <tr>
+                                        <td>{{ consultation.patient.first_name }} {{ consultation.patient.last_name }}</td>
+                                        <td>{{ consultation.date|date:"d/m/Y" }}</td>
+                                        <td>{{ consultation.doctor.get_full_name|default:consultation.doctor.username }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-stethoscope fa-3x text-success mb-3"></i>
+                            <h5 class="text-muted">Aucune consultation</h5>
+                            <p class="text-muted">Aucune consultation récente dans vos centres</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif role == 'NURSE' %}
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="section-title">Patients hospitalisés dans mes centres</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="main-card">
+                    <div class="card-body">
+                        {% if patients_in_my_centres %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Patient</th>
+                                        <th>Service</th>
+                                        <th>Chambre/Lit</th>
+                                        <th>Date d'admission</th>
+                                        <th>Médecin</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for hosp in patients_in_my_centres|slice:":10" %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="patient-avatar me-3">
+                                                    {{ hosp.patient.first_name|first|upper }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ hosp.patient.first_name }} {{ hosp.patient.last_name }}</div>
+                                                    <small class="text-muted">{{ hosp.patient.date_of_birth }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ hosp.service }}</td>
+                                        <td>{{ hosp.room|default:"-" }}/{{ hosp.bed|default:"-" }}</td>
+                                        <td>{{ hosp.admission_date|date:"d/m/Y" }}</td>
+                                        <td>{{ hosp.doctor.get_full_name|default:hosp.doctor.username }}</td>
+                                        <td>
+                                            <a href="{% url 'patient_detail' hosp.patient.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-procedures fa-3x text-warning mb-3"></i>
+                            <h5 class="text-muted">Aucun patient hospitalisé</h5>
+                            <p class="text-muted">Il n'y a actuellement aucun patient hospitalisé dans vos centres</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="main-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-injured fa-3x text-primary mb-4"></i>
+                        <h4 class="card-title">Accédez à vos fonctionnalités</h4>
+                        <p class="card-text text-muted">Utilisez le menu de gauche pour accéder aux différentes fonctionnalités du système selon votre rôle.</p>
+                        <a href="{% url 'patient_list' %}" class="btn btn-primary">
+                            <i class="fas fa-users me-2"></i>Gérer les patients
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="main-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-hospital fa-3x text-primary mb-4"></i>
+                    <h4 class="card-title">Système de Gestion Hospitalier</h4>
+                    <p class="card-text">Une solution complète pour la gestion des patients, consultations, hospitalisations et urgences dans votre établissement de santé.</p>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'login' %}" class="btn btn-primary me-2">
+                            <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

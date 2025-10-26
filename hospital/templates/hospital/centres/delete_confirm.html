@@ -1,0 +1,19 @@
+<div class="modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Confirmer la suppression</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <p>Êtes-vous sûr de vouloir supprimer le centre <strong>{{ centre.name }}</strong> ?</p>
+            <p>Cette action est irréversible et supprimera toutes les données associées à ce centre.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <form method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Supprimer</button>
+            </form>
+        </div>
+    </div>
+</div>

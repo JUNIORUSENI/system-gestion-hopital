@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - {{ patient.first_name }} {{ patient.last_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .hospital-info {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .patient-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .consultation-info {
+            margin-bottom: 20px;
+        }
+        .prescription-section {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .signature {
+            margin-top: 30px;
+            text-align: right;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 10mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="hospital-info">
+            <h2>MÉDICARE+</h2>
+            <p>Centre Médical</p>
+            <p>{{ doctor.profile.centres.first.name|default:"Centre non spécifié" }}</p>
+        </div>
+        <h1>{{ title }}</h1>
+    </div>
+    
+    <div class="patient-info">
+        <h3>Informations du patient</h3>
+        <p><strong>Nom:</strong> {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }}</p>
+        <p><strong>Date de naissance:</strong> {{ patient.date_of_birth|date:"d/m/Y" }}</p>
+        <p><strong>Genre:</strong> {% if patient.gender == 'M' %}Homme{% else %}Femme{% endif %}</p>
+        <p><strong>Téléphone:</strong> {{ patient.phone|default:"Non renseigné" }}</p>
+        {% if patient.emergency_contact %}
+        <p><strong>Contact d'urgence:</strong> {{ patient.emergency_contact }}</p>
+        {% endif %}
+    </div>
+    
+    {% if consultation %}
+    <div class="consultation-info">
+        <h3>Informations de la consultation</h3>
+        <p><strong>Date:</strong> {{ consultation.date|date:"d/m/Y H:i" }}</p>
+        <p><strong>Motif:</strong> {{ consultation.reason }}</p>
+        {% if consultation.diagnosis %}
+        <p><strong>Diagnostic:</strong> {{ consultation.diagnosis }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div class="prescription-section">
+        <h3>Prescription médicale</h3>
+        {% if consultation.prescription %}
+        <pre style="white-space: pre-wrap;">{{ consultation.prescription }}</pre>
+        {% else %}
+        <p>Aucune prescription enregistrée pour cette consultation.</p>
+        {% endif %}
+    </div>
+    
+    <div class="signature">
+        <p>_________________________</p>
+        <p><strong>{{ doctor.get_full_name|default:doctor.username }}</strong></p>
+        <p>{{ doctor.profile.role|title }}</p>
+        {% if doctor.profile.centres.first %}
+        <p>{{ doctor.profile.centres.first.name }}</p>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        <p>Ce document est émis le {{ current_date|date:"d/m/Y H:i" }} conformément aux normes médicales en vigueur.</p>
+        <p>Ce document est confidentiel et ne doit être transmis qu'aux personnes autorisées.</p>
+    </div>
+    
+    <div class="no-print" style="text-align: center; margin-top: 30px;">
+        <button onclick="window.print()" class="btn btn-primary">Imprimer ce document</button>
+        <a href="{% url 'patient_detail' patient.id %}" class="btn btn-secondary">Retour au patient</a>
+    </div>
+    
+    <script>
+        // Définir la date actuelle
+        document.addEventListener('DOMContentLoaded', function() {
+            var currentDate = new Date();
+            var options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+            var formattedDate = currentDate.toLocaleDateString('fr-FR', options);
+            var dateElements = document.querySelectorAll('[id="current_date"]');
+            for (var i = 0; i < dateElements.length; i++) {
+                dateElements[i].textContent = formattedDate;
+            }
+        });
+    </script>
+</body>
+</html>

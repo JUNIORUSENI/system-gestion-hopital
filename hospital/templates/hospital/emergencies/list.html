@@ -1,0 +1,304 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Urgences - {{ block.super }}{% endblock %}
+
+{% block page_title %}Gestion des Urgences{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="section-title mb-3">Toutes les Urgences</h2>
+            <div class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <div class="search-container position-relative">
+                            <input type="text" class="form-control ps-5" placeholder="Rechercher une urgence..." id="searchInput" style="padding-left: 2.5rem;">
+                            <i class="fas fa-search search-icon position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); z-index: 5; color: #6c757d;"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-unified btn-primary w-100" hx-get="{% url 'emergency_create' %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-plus me-2"></i>Nouvelle Urgence
+                        </button>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <!-- Filtre par niveau d'urgence -->
+                        <select class="form-select" id="levelFilter">
+                            <option value="">Tous les niveaux</option>
+                            <option value="LOW">Léger (Vert)</option>
+                            <option value="MEDIUM">Moyen (Jaune)</option>
+                            <option value="HIGH">Grave (Rouge)</option>
+                            <option value="CRITICAL">Vital (Crème)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <!-- Filtre par médecin -->
+                        <select class="form-select" id="doctorFilter">
+                            <option value="">Tous les médecins</option>
+                            {% regroup emergencies by doctor as doctor_groups %}
+                            {% for doctor_group in doctor_groups %}
+                                {% if doctor_group.grouper %}
+                                    <option value="{{ doctor_group.grouper.id }}">{{ doctor_group.grouper.get_full_name|default:doctor_group.grouper.username }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <!-- Filtre par statut -->
+                        <select class="form-select" id="statusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="DISCHARGED">Sortie</option>
+                            <option value="HOSPITALISED">Hospitalisation</option>
+                            <option value="TRANSFERRED">Transfert</option>
+                            <option value="EN_ATTENTE">En attente</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <!-- Filtre par centre -->
+                        <select class="form-select" id="centreFilter">
+                            <option value="">Tous les centres</option>
+                            {% regroup emergencies by centre as centre_groups %}
+                            {% for centre_group in centre_groups %}
+                                {% if centre_group.grouper %}
+                                    <option value="{{ centre_group.grouper.id }}">{{ centre_group.grouper.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 180px;">Patient</th>
+                                    <th style="min-width: 140px;">Heure d'arrivée</th>
+                                    <th style="min-width: 100px;">Centre</th>
+                                    <th style="min-width: 120px;">Niveau urgence</th>
+                                    <th style="min-width: 120px;">Médecin</th>
+                                    <th style="min-width: 100px;">Statut</th>
+                                    <th style="min-width: 120px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emergenciesTableBody">
+                                {% for emergency in emergencies %}
+                                <tr data-level="{{ emergency.triage_level }}" data-doctor="{{ emergency.doctor.id|default:'' }}" data-status="{% if emergency.orientation %}{{ emergency.orientation }}{% else %}EN_ATTENTE{% endif %}" data-centre="{{ emergency.centre.id|default:'' }}">
+                                    <td class="fw-bold" style="font-size: 0.9rem;">
+                                        <div class="d-flex flex-column">
+                                            <div class="text-truncate" style="max-width: 180px;">
+                                                <span class="text-uppercase">{{ emergency.patient.last_name }}</span>
+                                                {% if emergency.patient.postname %} <span class="text-uppercase">{{ emergency.patient.postname }}</span>{% endif %}
+                                                {{ emergency.patient.first_name }}
+                                            </div>
+                                            <small class="text-muted" style="font-size: 0.8rem;">#{{ emergency.patient.id }}</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap">{{ emergency.admission_time|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-truncate" style="max-width: 80px;">{{ emergency.centre.name }}</td>
+                                    <td>
+                                        {% if emergency.triage_level == 'LOW' %}
+                                        <span class="badge bg-success">{{ emergency.get_triage_level_display }}</span>
+                                        {% elif emergency.triage_level == 'MEDIUM' %}
+                                        <span class="badge bg-warning">{{ emergency.get_triage_level_display }}</span>
+                                        {% elif emergency.triage_level == 'HIGH' %}
+                                        <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-truncate" style="max-width: 100px;">{{ emergency.doctor.get_full_name|default:emergency.doctor.username }}</td>
+                                    <td>
+                                        {% if emergency.orientation %}
+                                            {% if emergency.orientation == 'DISCHARGED' %}
+                                            <span class="badge bg-success">Sortie</span>
+                                            {% elif emergency.orientation == 'HOSPITALISED' %}
+                                            <span class="badge bg-primary">Hospitalisation</span>
+                                            {% else %}
+                                            <span class="badge bg-warning text-dark">Transfert</span>
+                                            {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-secondary">En attente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'emergency_detail' emergency.id %}" class="btn btn-unified btn-sm btn-outline-primary" title="Voir le détail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-unified btn-sm btn-outline-secondary" hx-get="{% url 'emergency_edit' emergency.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Éditer">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-unified btn-sm btn-outline-danger" hx-get="{% url 'emergency_delete' emergency.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            <a href="#" class="btn btn-unified btn-sm btn-outline-info" title="Imprimer">
+                                                <i class="fas fa-print"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="fas fa-ambulance fa-3x mb-3"></i>
+                                        <h5>Aucune urgence trouvée</h5>
+                                        <p>Aucune urgence enregistrée pour le moment</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fonction de filtrage des urgences
+    function filterEmergencies() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const levelValue = document.getElementById('levelFilter').value;
+        const doctorValue = document.getElementById('doctorFilter').value;
+        const statusValue = document.getElementById('statusFilter').value;
+        const centreValue = document.getElementById('centreFilter').value;
+        
+        const tableRows = document.querySelectorAll('#emergenciesTableBody tr');
+        
+        tableRows.forEach(function(row) {
+            const rowText = row.textContent.toLowerCase();
+            const rowLevel = row.getAttribute('data-level');
+            const rowDoctor = row.getAttribute('data-doctor');
+            const rowStatus = row.getAttribute('data-status');
+            const rowCentre = row.getAttribute('data-centre');
+            
+            let showRow = true;
+            
+            // Filtrer par recherche textuelle
+            if (searchValue && !rowText.includes(searchValue)) {
+                showRow = false;
+            }
+            
+            // Filtrer par niveau d'urgence
+            if (levelValue && rowLevel !== levelValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par médecin
+            if (doctorValue && rowDoctor !== doctorValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par statut
+            if (statusValue && rowStatus !== statusValue) {
+                showRow = false;
+            }
+            
+            // Filtrer par centre
+            if (centreValue && rowCentre !== centreValue) {
+                showRow = false;
+            }
+            
+            if (showRow) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Ajouter des écouteurs d'événements pour chaque filtre
+    document.getElementById('searchInput').addEventListener('input', filterEmergencies);
+    document.getElementById('levelFilter').addEventListener('change', filterEmergencies);
+    document.getElementById('doctorFilter').addEventListener('change', filterEmergencies);
+    document.getElementById('statusFilter').addEventListener('change', filterEmergencies);
+    document.getElementById('centreFilter').addEventListener('change', filterEmergencies);
+</script>
+
+<!-- Pagination -->
+{% if emergencies.has_other_pages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <nav aria-label="Pagination des urgences">
+            <ul class="pagination justify-content-center">
+                {% if emergencies.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1" aria-label="Première">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ emergencies.previous_page_number }}" aria-label="Précédente">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;&laquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                {% endif %}
+
+                {% for num in emergencies.paginator.page_range %}
+                    {% if emergencies.number == num %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > emergencies.number|add:'-3' and num < emergencies.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if emergencies.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ emergencies.next_page_number }}" aria-label="Suivante">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ emergencies.paginator.num_pages }}" aria-label="Dernière">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        <div class="text-center text-muted">
+            Page {{ emergencies.number }} sur {{ emergencies.paginator.num_pages }} 
+            ({{ emergencies.paginator.count }} urgences au total)
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

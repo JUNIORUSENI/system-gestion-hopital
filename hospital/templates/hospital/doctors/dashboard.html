@@ -1,0 +1,198 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Espace Médecin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2>Mon Espace Personnel - Médecin</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Mes Patients</h5>
+                    <h3>{{ total_patients }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Consultations en attente</h5>
+                    <h3>{{ pending_consultations|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Consultations terminées</h5>
+                    <h3>{{ completed_consultations|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Rendez-vous à venir</h5>
+                    <h3>{{ upcoming_appointments|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Consultations en attente -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Consultations en attente</h3>
+                </div>
+                <div class="card-body">
+                    {% if pending_consultations %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Raison</th>
+                                    <th>Centre</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consultation in pending_consultations %}
+                                <tr>
+                                    <td>{{ consultation.date|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ consultation.patient }}</td>
+                                    <td>{{ consultation.reason|truncatechars:30 }}</td>
+                                    <td>{{ consultation.centre.name }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if consultation.status == 'PENDING' %}bg-warning
+                                            {% elif consultation.status == 'IN_PROGRESS' %}bg-info
+                                            {% endif %}">
+                                            {% if consultation.status == 'PENDING' %}En attente
+                                            {% elif consultation.status == 'IN_PROGRESS' %}En cours
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'patient_detail' consultation.patient.id %}" class="btn btn-sm btn-outline-primary">Voir Détail</a>
+                                        <a href="{% url 'consultation_edit' consultation.id %}" class="btn btn-sm btn-outline-secondary">Éditer</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>Aucune consultation en attente</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Consultations terminées -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Consultations terminées</h3>
+                </div>
+                <div class="card-body">
+                    {% if completed_consultations %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Raison</th>
+                                    <th>Centre</th>
+                                    <th>Diagnostic</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consultation in completed_consultations %}
+                                <tr>
+                                    <td>{{ consultation.date|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ consultation.patient }}</td>
+                                    <td>{{ consultation.reason|truncatechars:30 }}</td>
+                                    <td>{{ consultation.centre.name }}</td>
+                                    <td>{{ consultation.diagnosis|truncatechars:40 }}</td>
+                                    <td>
+                                        <a href="{% url 'patient_detail' consultation.patient.id %}" class="btn btn-sm btn-outline-primary">Voir Détail</a>
+                                        <a href="{% url 'generate_document' consultation.patient.id 'prescription' %}" class="btn btn-sm btn-outline-success">Ordonnance</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>Aucune consultation terminée</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rendez-vous à venir -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Rendez-vous à venir</h3>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Raison</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in upcoming_appointments %}
+                                <tr>
+                                    <td>{{ appointment.date|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ appointment.patient }}</td>
+                                    <td>{{ appointment.reason|truncatechars:40 }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if appointment.status == 'SCHEDULED' %}bg-primary
+                                            {% elif appointment.status == 'CONFIRMED' %}bg-info
+                                            {% endif %}">
+                                            {% if appointment.status == 'SCHEDULED' %}Planifié
+                                            {% elif appointment.status == 'CONFIRMED' %}Confirmé
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'appointment_edit' appointment.id %}" class="btn btn-sm btn-outline-primary">Éditer</a>
+                                        <a href="{% url 'patient_detail' appointment.patient.id %}" class="btn btn-sm btn-outline-secondary">Voir Patient</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>Aucun rendez-vous à venir</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+<div class="modal-header" style="background: linear-gradient(135deg, #1a2a4c, #2c3e50); color: white;">
+    <h5 class="modal-title fw-bold"><i class="fas fa-ambulance me-2"></i>{{ title }}</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form method="post" 
+      class="modal-form"
+      {% if emergency %}hx-post="{% url 'emergency_edit' emergency.id %}"{% else %}hx-post="{% url 'emergency_create' %}"{% endif %}
+      hx-target="#modal-container"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="modal-body" style="background-color: #f8f9fa; max-height: 70vh; overflow-y: auto;">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="patient_id" class="form-label fw-semibold text-dark">Patient</label>
+                <select name="patient_id" id="patient_id" class="form-select" required>
+                    <option value="">Sélectionnez un patient</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}"
+                        {% if emergency and emergency.patient.id == patient.id %}selected{% endif %}>
+                        {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }} ({{ patient.date_of_birth|date:"d/m/Y" }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="centre_id" class="form-label fw-semibold text-dark">Centre</label>
+                <select name="centre_id" id="centre_id" class="form-select" required>
+                    <option value="">Sélectionnez un centre</option>
+                    {% for centre in centres %}
+                    <option value="{{ centre.id }}" 
+                        {% if emergency and emergency.centre.id == centre.id %}selected{% endif %}>{{ centre.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="triage_level" class="form-label fw-semibold text-dark">Niveau d'urgence</label>
+                <select name="triage_level" id="triage_level" class="form-select" required>
+                    <option value="">Sélectionnez le niveau</option>
+                    <option value="LOW" {% if emergency and emergency.triage_level == 'LOW' %}selected{% endif %}>Léger (Vert)</option>
+                    <option value="MEDIUM" {% if emergency and emergency.triage_level == 'MEDIUM' %}selected{% endif %}>Moyen (Jaune)</option>
+                    <option value="HIGH" {% if emergency and emergency.triage_level == 'HIGH' %}selected{% endif %}>Grave (Rouge)</option>
+                    <option value="CRITICAL" {% if emergency and emergency.triage_level == 'CRITICAL' %}selected{% endif %}>Vital (Crème)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="doctor_id" class="form-label fw-semibold text-dark">Médecin responsable</label>
+                <select name="doctor_id" id="doctor_id" class="form-select">
+                    <option value="">Sélectionnez un médecin</option>
+                    {% for doctor in doctors %}
+                    <option value="{{ doctor.id }}" 
+                        {% if emergency and emergency.doctor and emergency.doctor.id == doctor.id %}selected{% endif %}>{{ doctor.get_full_name|default:doctor.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="reason" class="form-label fw-semibold text-dark">Motif de la visite</label>
+                <input type="text" name="reason" id="reason" class="form-control" required 
+                       value="{% if emergency %}{{ emergency.reason|default:'' }}{% endif %}">
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="vital_signs" class="form-label fw-semibold text-dark">Constantes vitales</label>
+                <textarea name="vital_signs" id="vital_signs" class="form-control" rows="2">{% if emergency %}{{ emergency.vital_signs|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="first_aid" class="form-label fw-semibold text-dark">Premiers soins</label>
+                <textarea name="first_aid" id="first_aid" class="form-control" rows="2">{% if emergency %}{{ emergency.first_aid|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="initial_diagnosis" class="form-label fw-semibold text-dark">Diagnostic initial</label>
+                <textarea name="initial_diagnosis" id="initial_diagnosis" class="form-control" rows="3">{% if emergency %}{{ emergency.initial_diagnosis|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="orientation" class="form-label fw-semibold text-dark">Orientation</label>
+                <select name="orientation" id="orientation" class="form-select">
+                    <option value="">Sélectionnez une orientation</option>
+                    <option value="DISCHARGED" {% if emergency and emergency.orientation == 'DISCHARGED' %}selected{% endif %}>Sortie</option>
+                    <option value="HOSPITALISED" {% if emergency and emergency.orientation == 'HOSPITALISED' %}selected{% endif %}>Hospitalisation</option>
+                    <option value="TRANSFERRED" {% if emergency and emergency.orientation == 'TRANSFERRED' %}selected{% endif %}>Transfert</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer bg-light" style="border-top: 1px solid #dee2e6;">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="fas fa-save me-2"></i>Enregistrer
+        </button>
+    </div>
+</form>
+
+<script>
+    // Ajouter des classes Bootstrap aux champs du formulaire si elles sont manquantes
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.modal-body input, .modal-body select, .modal-body textarea').forEach(function(element) {
+            if (!element.classList.contains('form-control') && 
+                !element.classList.contains('form-select') && 
+                element.type !== 'hidden') {
+                
+                if (element.tagName === 'SELECT') {
+                    element.classList.add('form-select');
+                } else if (element.tagName === 'TEXTAREA') {
+                    element.classList.add('form-control');
+                } else {
+                    element.classList.add('form-control');
+                }
+            }
+        });
+    });
+</script>

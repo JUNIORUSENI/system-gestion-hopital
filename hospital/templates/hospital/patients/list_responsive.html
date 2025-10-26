@@ -1,0 +1,382 @@
+{% extends "hospital/base_responsive.html" %}
+
+{% block title %}Patients - Système de Gestion Hospitalière{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap align-items-center mb-4">
+    <h1 class="h2">Liste des Patients</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'create_patient_form' %}" class="btn btn-primary" aria-label="Ajouter un nouveau patient">
+                <i class="fas fa-plus me-1"></i>
+                Nouveau Patient
+            </a>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Options d'affichage">
+                <i class="fas fa-download me-1"></i>
+                Exporter
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="exportPatients('csv')">CSV</a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportPatients('pdf')">PDF</a></li>
+                <li><a class="dropdown-item" href="#" onclick="printPatients()">Imprimer</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres de recherche -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Filtres de recherche</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3" aria-label="Formulaire de recherche">
+            <div class="col-md-4">
+                <label for="search-name" class="form-label">Nom du patient</label>
+                <div class="input-group">
+                    <span class="input-group-text" id="search-name-addon">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                    </span>
+                    <input type="text" class="form-control" id="search-name" name="q" 
+                           placeholder="Rechercher par nom..." value="{{ request.GET.q }}"
+                           aria-describedby="search-name-addon">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="filter-centre" class="form-label">Centre</label>
+                <select class="form-select" id="filter-centre" name="centre" aria-label="Filtrer par centre">
+                    <option value="">Tous les centres</option>
+                    {% for centre in centres %}
+                        <option value="{{ centre.id }}" {% if request.GET.centre == centre.id|stringformat:"s" %}selected{% endif %}>
+                            {{ centre.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filter-date" class="form-label">Date de naissance</label>
+                <input type="date" class="form-control" id="filter-date" name="date_naissance" 
+                       value="{{ request.GET.date_naissance }}" aria-label="Filtrer par date de naissance">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <div class="btn-group w-100">
+                    <button type="submit" class="btn btn-primary" aria-label="Appliquer les filtres">
+                        <i class="fas fa-filter me-1"></i>
+                        Filtrer
+                    </button>
+                    <a href="{% url 'patient_list' %}" class="btn btn-outline-secondary" aria-label="Réinitialiser les filtres">
+                        <i class="fas fa-times me-1"></i>
+                        Réinitialiser
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ patients.paginator.count }}</h5>
+                <p class="card-text">Total Patients</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">{{ centres.count }}</h5>
+                <p class="card-text">Centres</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">{{ page_obj.number }}</h5>
+                <p class="card-text">Page</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">{{ patients.paginator.num_pages }}</h5>
+                <p class="card-text">Total Pages</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau des patients -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Patients</h5>
+        <span class="badge bg-primary rounded-pill">{{ patients.paginator.count }} patients</span>
+    </div>
+    <div class="card-body p-0">
+        {% if patients %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" aria-label="Liste des patients">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">
+                                <a href="?sort=nom" class="text-decoration-none" aria-label="Trier par nom">
+                                    Nom
+                                    <i class="fas fa-sort ms-1" aria-hidden="true"></i>
+                                </a>
+                            </th>
+                            <th scope="col">
+                                <a href="?sort=date_naissance" class="text-decoration-none" aria-label="Trier par date de naissance">
+                                    Date de naissance
+                                    <i class="fas fa-sort ms-1" aria-hidden="true"></i>
+                                </a>
+                            </th>
+                            <th scope="col">Genre</th>
+                            <th scope="col">Téléphone</th>
+                            <th scope="col">Centre</th>
+                            <th scope="col" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for patient in patients %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'patient_detail' patient.id %}" class="text-decoration-none fw-bold" aria-label="Voir les détails de {{ patient }}">
+                                        {{ patient.last_name|upper }}{% if patient.postname %} {{ patient.postname|upper }}{% endif %} {{ patient.first_name }}
+                                    </a>
+                                    {% if patient.is_subscriber %}
+                                        <span class="badge bg-success ms-1" aria-label="Patient abonné">Abonné</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ patient.date_of_birth|date:"d/m/Y" }} ({{ patient.get_age }} ans)</td>
+                                <td>
+                                    <span class="badge {% if patient.gender == 'M' %}bg-info{% else %}bg-danger{% endif %}">
+                                        {% if patient.gender == 'M' %}Masculin{% else %}Féminin{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if patient.phone %}
+                                        <a href="tel:{{ patient.phone }}" class="text-decoration-none" aria-label="Appeler {{ patient.phone }}">
+                                            {{ patient.phone }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Non renseigné</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ patient.default_centre.name|default:"Non assigné" }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group" aria-label="Actions pour {{ patient }}">
+                                        <a href="{% url 'patient_detail' patient.id %}" class="btn btn-sm btn-outline-primary" aria-label="Voir les détails de {{ patient }}">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
+                                            <span class="d-none d-md-inline">Voir</span>
+                                        </a>
+                                        <a href="{% url 'edit_patient' patient.id %}" class="btn btn-sm btn-outline-secondary" aria-label="Modifier {{ patient }}">
+                                            <i class="fas fa-edit" aria-hidden="true"></i>
+                                            <span class="d-none d-md-inline">Modifier</span>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-info quick-view-btn" data-patient-id="{{ patient.id }}" aria-label="Aperçu rapide de {{ patient.first_name }} {{ patient.last_name }}">
+                                            <i class="fas fa-address-card" aria-hidden="true"></i>
+                                            <span class="d-none d-md-inline">Aperçu</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if patients.has_other_pages %}
+                <nav aria-label="Pagination des patients" class="p-3">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if patients.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ patients.previous_page_number }}" aria-label="Page précédente">
+                                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                                    <span class="sr-only">Précédent</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in patients.paginator.page_range %}
+                            {% if patients.number == num %}
+                                <li class="page-item active" aria-current="page">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > patients.number|add:'-3' and num < patients.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if patients.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ patients.next_page_number }}" aria-label="Page suivante">
+                                    <span class="sr-only">Suivant</span>
+                                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3" aria-hidden="true"></i>
+                <h5 class="text-muted">Aucun patient trouvé</h5>
+                <p class="text-muted">Essayez de modifier vos critères de recherche ou ajoutez un nouveau patient.</p>
+                <a href="{% url 'create_patient_form' %}" class="btn btn-primary mt-3" aria-label="Ajouter un nouveau patient">
+                    <i class="fas fa-plus me-1"></i>
+                    Ajouter un patient
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal pour l'aperçu rapide -->
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickViewModalLabel">Aperçu du patient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body" id="quickViewContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="viewFullDetails">Voir les détails complets</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Fonction pour afficher l'aperçu rapide d'un patient
+    function showQuickView(patientId) {
+        const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
+        const content = document.getElementById('quickViewContent');
+        const viewDetailsBtn = document.getElementById('viewFullDetails');
+        
+        // Afficher l'indicateur de chargement
+        content.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+            </div>
+        `;
+        
+        // Configurer le bouton pour voir les détails complets
+        viewDetailsBtn.onclick = function() {
+            window.location.href = `/patients/${patientId}/`;
+        };
+        
+        // Charger les données du patient
+        fetch(`/patients/${patientId}/quick-view/`)
+            .then(response => response.json())
+            .then(data => {
+                content.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informations personnelles</h6>
+                            <p><strong>Nom:</strong> ${data.last_name} ${data.first_name}</p>
+                            <p><strong>Date de naissance:</strong> ${data.date_of_birth}</p>
+                            <p><strong>Âge:</strong> ${data.age} ans</p>
+                            <p><strong>Genre:</strong> ${data.gender}</p>
+                            <p><strong>Téléphone:</strong> ${data.phone || 'Non renseigné'}</p>
+                            <p><strong>Adresse:</strong> ${data.address || 'Non renseignée'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Informations médicales</h6>
+                            <p><strong>Centre:</strong> ${data.centre}</p>
+                            <p><strong>Contact d'urgence:</strong> ${data.emergency_contact || 'Non renseigné'}</p>
+                            <p><strong>Assuré:</strong> ${data.is_subscriber ? 'Oui' : 'Non'}</p>
+                            <p><strong>Allergies:</strong> ${data.allergies || 'Aucune'}</p>
+                            <p><strong>Antécédents:</strong> ${data.medical_history || 'Aucun'}</p>
+                        </div>
+                    </div>
+                `;
+                
+                modal.show();
+            })
+            .catch(error => {
+                content.innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        Une erreur est survenue lors du chargement des données du patient.
+                    </div>
+                `;
+                modal.show();
+            });
+    }
+    
+    // Fonction pour exporter les patients
+    function exportPatients(format) {
+        const url = new URL(window.location);
+        url.searchParams.set('export', format);
+        window.open(url.toString(), '_blank');
+    }
+    
+    // Fonction pour imprimer la liste des patients
+    function printPatients() {
+        window.print();
+    }
+    
+    // Améliorations d'accessibilité
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion du focus pour les éléments de tableau
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const firstLink = this.querySelector('a');
+                    if (firstLink) {
+                        firstLink.click();
+                    }
+                }
+            });
+            
+            // Rendre les lignes focusables
+            row.setAttribute('tabindex', '0');
+            row.setAttribute('role', 'button');
+            row.setAttribute('aria-label', `Voir les détails du patient dans cette ligne`);
+        });
+        
+        // Amélioration de la navigation au clavier pour les boutons d'action
+        const actionButtons = document.querySelectorAll('.btn-group .btn');
+        actionButtons.forEach(button => {
+            button.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const buttons = Array.from(this.parentElement.querySelectorAll('.btn'));
+                    const currentIndex = buttons.indexOf(this);
+                    let nextIndex;
+                    
+                    if (e.key === 'ArrowRight') {
+                        nextIndex = (currentIndex + 1) % buttons.length;
+                    } else {
+                        nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+                    }
+                    
+                    buttons[nextIndex].focus();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

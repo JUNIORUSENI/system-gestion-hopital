@@ -1,0 +1,26 @@
+# Dépendances de base pour le projet hospital_management
+
+# Django
+Django>=4.2.20,<5.0
+
+# Gestion des variables d'environnement
+python-decouple>=3.8
+
+# Base de données
+dj-database-url>=2.1.0
+
+# Cache Redis
+django-redis>=5.4.0
+redis>=5.0.0
+
+# Validation et sécurité
+django-cors-headers>=4.3.0
+
+# Utils
+python-dateutil>=2.8.2
+
+# Monitoring et système
+psutil>=5.9.0
+
+# Monitoring (optionnel)
+sentry-sdk>=1.40.0

@@ -1,0 +1,245 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Urgence - {{ emergency.patient.first_name }} {{ emergency.patient.last_name }} - {{ block.super }}{% endblock %}
+
+{% block page_title %}Détail de l'Urgence{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title">Urgence #{{ emergency.id }}</h2>
+                <div>
+                    <a href="{% url 'emergency_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                    </a>
+                    {% if not emergency.orientation %}
+                    <button class="btn btn-primary" hx-get="{% url 'emergency_triage' emergency.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                        <i class="fas fa-clipboard-list me-2"></i>Faire le triage
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations de base -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-ambulance text-danger me-2"></i>Informations de l'urgence</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Date d'arrivée:</strong> {{ emergency.admission_time|date:"d/m/Y H:i" }}</p>
+                            <p class="mb-1"><strong>Centre:</strong> {{ emergency.centre.name }}</p>
+                            <p class="mb-1"><strong>Niveau d'urgence:</strong> 
+                                {% if emergency.triage_level == 'LOW' %}
+                                <span class="badge bg-success">{{ emergency.get_triage_level_display }}</span>
+                                {% elif emergency.triage_level == 'MEDIUM' %}
+                                <span class="badge bg-warning">{{ emergency.get_triage_level_display }}</span>
+                                {% elif emergency.triage_level == 'HIGH' %}
+                                <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                                {% elif emergency.triage_level == 'CRITICAL' %}
+                                <span class="badge bg-danger">{{ emergency.get_triage_level_display }}</span>
+                                {% else %}
+                                <span class="badge bg-light">{{ emergency.get_triage_level_display|default:"Non défini" }}</span>
+                                {% endif %}
+                            </p>
+                            <p class="mb-1"><strong>Médecin responsable:</strong> {{ emergency.doctor.get_full_name|default:emergency.doctor.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Motif de la visite:</strong> {{ emergency.reason }}</p>
+                            <p class="mb-1"><strong>Orientation:</strong> 
+                                {% if emergency.orientation %}
+                                    {% if emergency.orientation == 'DISCHARGED' %}
+                                    <span class="badge bg-success">Sortie</span>
+                                    {% elif emergency.orientation == 'HOSPITALISED' %}
+                                    <span class="badge bg-info">Hospitalisation</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Transfert</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge bg-light">En attente</span>
+                                {% endif %}
+                            </p>
+                            <p class="mb-1"><strong>Statut:</strong> 
+                                {% if emergency.orientation %}
+                                <span class="badge bg-success">Terminée</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">En cours</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations du patient -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-injured text-primary me-2"></i>Informations du patient</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="patient-avatar me-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                            {{ emergency.patient.first_name|first|upper }}
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">{{ emergency.patient.first_name }} {{ emergency.patient.last_name }}</h5>
+                            <p class="text-muted mb-0">{{ emergency.patient.date_of_birth|date:"d/m/Y" }} ({{ emergency.patient.get_age }} ans)</p>
+                            <p class="text-muted mb-0">{{ emergency.patient.gender_display }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Téléphone:</strong> {{ emergency.patient.phone|default:"Non renseigné" }}</p>
+                            <p class="mb-1"><strong>Adresse:</strong> {{ emergency.patient.address|default:"Non renseignée"|truncatewords:5 }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Contact d'urgence:</strong> {{ emergency.patient.emergency_contact|default:"Non renseigné" }}</p>
+                            <p class="mb-1"><strong>Statut:</strong> 
+                                {% if emergency.patient.is_subscriber %}
+                                <span class="badge bg-success">Abonné</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Particulier</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{% url 'patient_detail' emergency.patient.id %}" class="btn btn-outline-primary btn-sm mt-2">
+                        <i class="fas fa-user-md me-1"></i>Voir la fiche complète
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Signes vitaux -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-heartbeat text-info me-2"></i>Signes vitaux</h5>
+                </div>
+                <div class="card-body">
+                    {% if emergency.vital_signs %}
+                    <div class="border rounded p-3 bg-light">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ emergency.vital_signs }}</pre>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucun signe vital enregistré pour cette urgence.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Premiers soins -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-first-aid text-warning me-2"></i>Premiers soins</h5>
+                </div>
+                <div class="card-body">
+                    {% if emergency.first_aid %}
+                    <div class="border rounded p-3 bg-light">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ emergency.first_aid }}</pre>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucun premier soin enregistré pour cette urgence.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Diagnostic initial -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-diagnoses text-success me-2"></i>Diagnostic initial</h5>
+                </div>
+                <div class="card-body">
+                    {% if emergency.initial_diagnosis %}
+                    <div class="border rounded p-3 bg-light">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ emergency.initial_diagnosis }}</pre>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucun diagnostic initial enregistré pour cette urgence.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Orientation finale -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-directions text-primary me-2"></i>Orientation finale</h5>
+                </div>
+                <div class="card-body">
+                    {% if emergency.orientation %}
+                    <div class="border rounded p-3 bg-light">
+                        <p class="mb-1"><strong>Orientation:</strong> 
+                            {% if emergency.orientation == 'DISCHARGED' %}Sortie
+                            {% elif emergency.orientation == 'HOSPITALISED' %}Hospitalisation
+                            {% else %}Transfert
+                            {% endif %}
+                        </p>
+                        {% if emergency.orientation_details %}
+                        <p class="mb-0"><strong>Détails:</strong> {{ emergency.orientation_details }}</p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucune orientation finale définie pour cette urgence.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-tasks me-2"></i>Actions disponibles</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if not emergency.orientation %}
+                        <button class="btn btn-primary" hx-get="{% url 'emergency_triage' emergency.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-clipboard-list me-2"></i>Faire le triage
+                        </button>
+                        <button class="btn btn-success" hx-get="{% url 'emergency_edit' emergency.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-edit me-2"></i>Modifier
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-secondary" hx-get="{% url 'emergency_delete' emergency.id %}" hx-target="#modal-container" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#modal-container">
+                            <i class="fas fa-trash me-2"></i>Supprimer
+                        </button>
+                        {% if emergency.orientation %}
+                        <a href="{% url 'generate_document' emergency.patient.id 'emergency_report' %}" class="btn btn-info" target="_blank">
+                            <i class="fas fa-file-medical me-2"></i>Générer un rapport d'urgence
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="modal-container" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here by HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

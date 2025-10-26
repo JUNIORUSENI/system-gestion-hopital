@@ -1,0 +1,413 @@
+{% extends 'hospital/base.html' %}
+
+{% block title %}Dashboard Médecin Administrateur - {{ block.super }}{% endblock %}
+
+{% block page_title %}Dashboard Médecin Administrateur{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="welcome-card mb-4">
+                <div class="welcome-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h2 class="display-5 fw-bold">Statistiques Hospitalières</h2>
+                <p class="lead">Vue d'ensemble complète de l'activité de l'hôpital</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques générales -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-primary-gradient mx-auto">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="fw-bold">{{ total_patients }}</h3>
+                    <p class="text-muted mb-0">Patients</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success-gradient mx-auto">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <h3 class="fw-bold">{{ total_consultations }}</h3>
+                    <p class="text-muted mb-0">Consultations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-warning-gradient mx-auto">
+                        <i class="fas fa-procedures"></i>
+                    </div>
+                    <h3 class="fw-bold">{{ total_hospitalisations }}</h3>
+                    <p class="text-muted mb-0">Hospitalisations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-danger-gradient mx-auto">
+                        <i class="fas fa-ambulance"></i>
+                    </div>
+                    <h3 class="fw-bold">{{ total_emergencies }}</h3>
+                    <p class="text-muted mb-0">Urgences</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-info-gradient mx-auto">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3 class="fw-bold">{{ total_appointments }}</h3>
+                    <p class="text-muted mb-0">Rendez-vous</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-secondary-gradient mx-auto">
+                        <i class="fas fa-bed"></i>
+                    </div>
+                    <h3 class="fw-bold">{{ active_hospitalisations }}</h3>
+                    <p class="text-muted mb-0">Actives</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques par personnel -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="main-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Médecins</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="fw-bold text-primary">{{ total_doctors }}</h2>
+                    <p class="text-muted mb-0">Médecins actifs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="main-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-nurse me-2"></i>Infirmiers</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="fw-bold text-success">{{ total_nurses }}</h2>
+                    <p class="text-muted mb-0">Infirmiers actifs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="main-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>Secrétaires</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="fw-bold text-warning">{{ total_secretaries }}</h2>
+                    <p class="text-muted mb-0">Secrétaires actifs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="main-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-building me-2"></i>Centres</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="fw-bold text-info">{{ total_centres }}</h2>
+                    <p class="text-muted mb-0">Centres médicaux</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques et analyses détaillées -->
+    <div class="row mb-4">
+        <!-- Consultations par statut -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Consultations par statut</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap">
+                        <div class="me-4 mb-3">
+                            <span class="badge bg-warning">En attente: {{ consultations_by_status.PENDING|default:0 }}</span>
+                        </div>
+                        <div class="me-4 mb-3">
+                            <span class="badge bg-info">En cours: {{ consultations_by_status.IN_PROGRESS|default:0 }}</span>
+                        </div>
+                        <div class="me-4 mb-3">
+                            <span class="badge bg-success">Terminées: {{ consultations_by_status.COMPLETED|default:0 }}</span>
+                        </div>
+                        <div class="me-4 mb-3">
+                            <span class="badge bg-secondary">Annulées: {{ consultations_by_status.CANCELLED|default:0 }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Graphique circulaire simulé -->
+                    <div class="mt-3">
+                        <canvas id="consultationsChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Urgences par niveau -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-ambulance me-2"></i>Urgences par niveau</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap">
+                        <div class="me-4 mb-3">
+                            <span class="badge" style="background-color: #28a745;">Léger: {{ emergencies_by_level.LOW|default:0 }}</span>
+                        </div>
+                        <div class="me-4 mb-3">
+                            <span class="badge" style="background-color: #ffc107;">Moyen: {{ emergencies_by_level.MEDIUM|default:0 }}</span>
+                        </div>
+                        <div class="me-4 mb-3">
+                            <span class="badge" style="background-color: #fd7e14;">Grave: {{ emergencies_by_level.HIGH|default:0 }}</span>
+                        </div>
+                        <div class="me-4 mb-3">
+                            <span class="badge" style="background-color: #dc3545;">Vital: {{ emergencies_by_level.CRITICAL|default:0 }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Graphique circulaire simulé -->
+                    <div class="mt-3">
+                        <canvas id="emergenciesChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top médecins et services -->
+    <div class="row mb-4">
+        <!-- Top 10 médecins par consultations -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top 10 médecins par consultations</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_doctors %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Médecin</th>
+                                    <th class="text-end">Consultations</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doctor in top_doctors %}
+                                <tr>
+                                    <td>{{ doctor.full_name }}</td>
+                                    <td class="text-end fw-bold">{{ doctor.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Top 10 services par hospitalisations -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-procedures me-2"></i>Top 10 services par hospitalisations</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_services %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th class="text-end">Hospitalisations</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for service in top_services %}
+                                <tr>
+                                    <td>{{ service.service }}</td>
+                                    <td class="text-end fw-bold">{{ service.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyse temporelle -->
+    <div class="row mb-4">
+        <!-- Consultations des 7 derniers jours -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar-week me-2"></i>Consultations - 7 derniers jours</h5>
+                </div>
+                <div class="card-body">
+                    {% if weekly_consultations %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Jour</th>
+                                    <th class="text-end">Consultations</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day in weekly_consultations %}
+                                <tr>
+                                    <td>{{ day.date }}</td>
+                                    <td class="text-end fw-bold">{{ day.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Consultations mensuelles -->
+        <div class="col-md-6">
+            <div class="main-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Consultations - 4 derniers mois</h5>
+                </div>
+                <div class="card-body">
+                    {% if monthly_consultations %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Mois</th>
+                                    <th class="text-end">Consultations</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for month in monthly_consultations %}
+                                <tr>
+                                    <td>{{ month.month }}</td>
+                                    <td class="text-end fw-bold">{{ month.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Graphiques simples avec Chart.js
+    document.addEventListener('DOMContentLoaded', function() {
+        // Graphique des consultations
+        const consultationsCtx = document.getElementById('consultationsChart');
+        if (consultationsCtx) {
+            new Chart(consultationsCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['En attente', 'En cours', 'Terminées', 'Annulées'],
+                    datasets: [{
+                        data: [
+                            {{ consultations_by_status.PENDING|default:0 }},
+                            {{ consultations_by_status.IN_PROGRESS|default:0 }},
+                            {{ consultations_by_status.COMPLETED|default:0 }},
+                            {{ consultations_by_status.CANCELLED|default:0 }}
+                        ],
+                        backgroundColor: [
+                            '#ffc107',
+                            '#17a2b8',
+                            '#28a745',
+                            '#6c757d'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Graphique des urgences
+        const emergenciesCtx = document.getElementById('emergenciesChart');
+        if (emergenciesCtx) {
+            new Chart(emergenciesCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Léger', 'Moyen', 'Grave', 'Vital'],
+                    datasets: [{
+                        data: [
+                            {{ emergencies_by_level.LOW|default:0 }},
+                            {{ emergencies_by_level.MEDIUM|default:0 }},
+                            {{ emergencies_by_level.HIGH|default:0 }},
+                            {{ emergencies_by_level.CRITICAL|default:0 }}
+                        ],
+                        backgroundColor: [
+                            '#28a745',
+                            '#ffc107',
+                            '#fd7e14',
+                            '#dc3545'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

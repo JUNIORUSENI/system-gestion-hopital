@@ -1,0 +1,104 @@
+<div class="modal-header" style="background: linear-gradient(135deg, #1a2a4c, #2c3e50); color: white;">
+    <h5 class="modal-title fw-bold"><i class="fas fa-stethoscope me-2"></i>{{ title }}</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form method="post" 
+      class="modal-form"
+      {% if consultation %}hx-post="{% url 'consultation_edit' consultation.id %}"{% else %}hx-post="{% url 'consultation_create' %}"{% endif %}
+      hx-target="#modal-container"
+      hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="modal-body" style="background-color: #f8f9fa; max-height: 70vh; overflow-y: auto;">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="patient_id" class="form-label fw-semibold text-dark">Patient</label>
+                <select name="patient_id" id="patient_id" class="form-select" required>
+                    <option value="">Sélectionnez un patient</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}"
+                        {% if consultation and consultation.patient.id == patient.id %}selected{% endif %}>
+                        {{ patient.last_name|upper }} {% if patient.postname %}{{ patient.postname|upper }} {% endif %}{{ patient.first_name }} ({{ patient.date_of_birth|date:"d/m/Y" }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="reason" class="form-label fw-semibold text-dark">Motif de consultation</label>
+                <input type="text" name="reason" id="reason" class="form-control" required 
+                       value="{% if consultation %}{{ consultation.reason|default:'' }}{% endif %}">
+            </div>
+            <div class="col-md-6">
+                <label for="follow_up_date" class="form-label fw-semibold text-dark">Prochain rendez-vous</label>
+                <input type="date" name="follow_up_date" id="follow_up_date" class="form-control" 
+                       value="{% if consultation and consultation.follow_up_date %}{{ consultation.follow_up_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="appointment_date" class="form-label fw-semibold text-dark">Date du rendez-vous</label>
+                <input type="datetime-local" name="appointment_date" id="appointment_date" class="form-control" 
+                       value="{% if consultation and consultation.appointment_date %}{{ consultation.appointment_date|date:'Y-m-d\\TH:i' }}{% endif %}">
+            </div>
+            <div class="col-md-6">
+                <label for="status" class="form-label fw-semibold text-dark">Statut</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="PENDING" {% if consultation and consultation.status == 'PENDING' %}selected{% endif %}>En attente</option>
+                    <option value="IN_PROGRESS" {% if consultation and consultation.status == 'IN_PROGRESS' %}selected{% endif %}>En cours</option>
+                    <option value="COMPLETED" {% if consultation and consultation.status == 'COMPLETED' %}selected{% endif %}>Terminée</option>
+                    <option value="CANCELLED" {% if consultation and consultation.status == 'CANCELLED' %}selected{% endif %}>Annulée</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="clinical_exam" class="form-label fw-semibold text-dark">Examen clinique</label>
+                <textarea name="clinical_exam" id="clinical_exam" class="form-control" rows="3">{% if consultation %}{{ consultation.clinical_exam|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="diagnosis" class="form-label fw-semibold text-dark">Diagnostic</label>
+                <textarea name="diagnosis" id="diagnosis" class="form-control" rows="3">{% if consultation %}{{ consultation.diagnosis|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="prescription" class="form-label fw-semibold text-dark">Prescription</label>
+                <textarea name="prescription" id="prescription" class="form-control" rows="3">{% if consultation %}{{ consultation.prescription|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer bg-light" style="border-top: 1px solid #dee2e6;">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="fas fa-save me-2"></i>Enregistrer
+        </button>
+    </div>
+</form>
+
+<script>
+    // Ajouter des classes Bootstrap aux champs du formulaire si elles sont manquantes
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.modal-body input, .modal-body select, .modal-body textarea').forEach(function(element) {
+            if (!element.classList.contains('form-control') && 
+                !element.classList.contains('form-select') && 
+                element.type !== 'hidden') {
+                
+                if (element.tagName === 'SELECT') {
+                    element.classList.add('form-select');
+                } else if (element.tagName === 'TEXTAREA') {
+                    element.classList.add('form-control');
+                } else {
+                    element.classList.add('form-control');
+                }
+            }
+        });
+    });
+</script>
